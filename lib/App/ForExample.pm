@@ -90,7 +90,10 @@ on 'catalyst/fastcgi *' =>
 
             # TODO Error in Catalyst::Engine::FastCGI dox?
 
-            process 'catalyst/fastcgi/apache2' => %process;
+            process 'catalyst/fastcgi/apache2' => %process,
+                fastcgi_socket => $fastcgi_socket,
+                fastcgi_file => $fastcgi_file
+            ;
         }
         else {
             croak "Don't understand mode \"$mode\""
