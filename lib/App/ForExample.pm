@@ -15,9 +15,11 @@ Version 0.01
 
 our $VERSION = '0.01';
 
+use App::ForExample::ModuleEmbedCatalog;
+
 use Template;
 use Carp;
-use App::ForExample::ModuleEmbedCatalog;
+use Path::Class;
 
 my $tt = Template->new;
 my $catalog = App::ForExample::ModuleEmbedCatalog->extract( __PACKAGE__ );
@@ -62,7 +64,8 @@ on 'catalyst/fastcgi *' =>
     my $name = $ctx->option( 'name' ) || 'xyzzy';
 
     # Catalyst home
-    my $home = $ctx->option( 'home' ) || "./$name";
+    my $home = $ctx->option( 'home' ) || "./";
+    $home = dir( $home )->absolute;
 
     # Catalyst application base
     my $base = $ctx->option( 'base' ) || '/';
@@ -70,7 +73,7 @@ on 'catalyst/fastcgi *' =>
     my $alias_base = $base eq '' ? '/' : "/$base/";
 
     # Virtual host
-    my $host = $ctx->option( 'host' ) || $name;
+    my $host = $ctx->option( 'host' ) || "$name.example.com";
 
     my %process = (
         name => $name,
@@ -90,9 +93,14 @@ on 'catalyst/fastcgi *' =>
 
             # TODO Error in Catalyst::Engine::FastCGI dox?
 
-            process 'catalyst/fastcgi/apache2' => %process,
+            process 'catalyst/fastcgi/apache2' =>
+                %process,
                 fastcgi_socket => $fastcgi_socket,
                 fastcgi_file => $fastcgi_file
+            ;
+
+            process 'catalyst/fastcgi/monit' =>
+                %process,
             ;
         }
         else {
@@ -187,8 +195,8 @@ catalyst/fastcgi/apache2
     ServerName [% host %]
     ServerAlias www.[% host %]
 
-    CustomLog "|/usr/sbin/cronolog /var/log/apache2/[% host %]-%Y-%m.access.log -S /var/log/apache2/[% host %].access.log" combined
-    ErrorLog "|/usr/sbin/cronolog /var/log/apache2/[% host %]-%Y-%m.error.log -S /var/log/apache2/[% host %].error.log"
+    CustomLog "|/usr/bin/cronolog /var/log/apache2/[% host %]-%Y-%m.access.log -S /var/log/apache2/[% host %].access.log" combined
+    ErrorLog "|/usr/bin/cronolog /var/log/apache2/[% host %]-%Y-%m.error.log -S /var/log/apache2/[% host %].error.log"
 
     FastCgiExternalServer [% fastcgi_file %] -socket [% fastcgi_socket %]
     Alias [% alias_base %] [% fastcgi_file %]/
@@ -206,6 +214,16 @@ catalyst/fastcgi/apache2
 </VirtualHost>
 
 # Start your fastcgi socket with the following command:
-# script/[% name %]_fastcgi.pl -l [% fastcgi_socket %] -n 5
+# #!/bin/bash
+# [% home %]/script/[% name %]_fastcgi.pl -l [% fastcgi_socket %] -n 5 -p [% home %]/[% name %]-fastcgi.pid
+
+# Stop it with this one:
+# #!/bin/bash
+# kill -2 `cat [% home %]/[% name %]-fastcgi.pid`
 __ASSET__
 
+catalyst/fastcgi/monit
+check process [% name %]-fastcgi with pidfile [% home %]/[% name %]-fastcgi.pid
+  start program = "[% home %]/fastcgi-start"
+  stop program  = "[% home %]/fastcgi-stop"
+__ASSET__
