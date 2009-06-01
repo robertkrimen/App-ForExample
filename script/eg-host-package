@@ -1,0 +1,3 @@
+#!/bin/sh
+
+./script/eg $* --host eg.localhost --package Eg

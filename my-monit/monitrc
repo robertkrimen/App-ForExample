@@ -10,8 +10,8 @@ set httpd port 2822 # This port needs to be unique on a system
      allow localhost
 
 check process eg-fastcgi with pidfile /home/rob/develop/App-ForExample/Eg/eg-fastcgi.pid
-  start program = "/home/rob/develop/App-ForExample/Eg/fastcgi-start"
-  stop program  = "/home/rob/develop/App-ForExample/Eg/fastcgi-stop"
+  start program = "/home/rob/develop/App-ForExample/Eg/fastcgi start"
+  stop program  = "/home/rob/develop/App-ForExample/Eg/fastcgi stop"
 
 # Put this file in /home/rob/develop/App-ForExample/my-monit/monitrc
 # Use this alias to control your monit daemon:

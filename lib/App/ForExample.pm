@@ -35,13 +35,20 @@ sub process ($@) {
         $template = $catalog->{$given} or croak "Template \"$given\" does not exist in the catalog";
     }
 
+    print "---\n";
     $tt->process( $template => { @_ } ) or croak "Error processing template \"$given\": ", $tt->error; 
 }
 
 use Getopt::Chain::Declare;
 
+sub package2name ($) {
+    my $package = shift;
+    $package =~ s/::/_/g;
+    $package = lc $package;
+}
+
 on 'catalyst/mod_perl *' => 
-    [qw/ name=s home=s base=s host=s /] => sub {
+    [qw/ package=s name=s home=s base=s host=s /] => sub {
     my $ctx = shift;
     
     my ($server);
@@ -52,8 +59,13 @@ on 'catalyst/mod_perl *' =>
     }
     ($server) = qw/apache2/;
 
+    # Catalyst package
+    my $package = $ctx->option( 'package' ) || 'Project::Xyzzy';
+    my $package_name = package2name $package;
+
     # Catalyst name
-    my $name = $ctx->option( 'name' ) || 'xyzzy';
+    my $name = $ctx->option( 'name' );
+    $name = $package_name unless defined $name;
 
     # Catalyst home
     my $home = $ctx->option( 'home' ) || "./";
@@ -87,7 +99,7 @@ on 'catalyst/mod_perl *' =>
 };
 
 on 'catalyst/fastcgi *' => 
-    [qw/ name=s home=s base=s host=s /] => sub {
+    [qw/ package=s name=s home=s base=s host=s /] => sub {
     my $ctx = shift;
     
     my ($server, $server_module, $mode);
@@ -106,9 +118,16 @@ on 'catalyst/fastcgi *' =>
     ($server, $server_module) = qw/apache2 fastcgi/ unless $server;
     ($mode) = qw/standalone/ unless $mode;
 
+    my @data;
+
+    # Catalyst package
+    my $package = $ctx->option( 'package' ) || 'Project::Xyzzy';
+    my $package_name = package2name $package;
 
     # Catalyst name
-    my $name = $ctx->option( 'name' ) || 'xyzzy';
+    my $name = $ctx->option( 'name' );
+    $name = $package_name unless defined $name;
+
 
     # Catalyst home
     my $home = $ctx->option( 'home' ) || "./";
@@ -122,13 +141,14 @@ on 'catalyst/fastcgi *' =>
     # Virtual host
     my $host = $ctx->option( 'host' ) || "$name.example.com";
 
-    my %process = (
+    push @data,
+        package => $package,
         name => $name,
         home => $home,
         base => $base,
         alias_base => $alias_base,
         host => $host,
-    );
+    ;
 
     if ( $server =~ m/^apache2?$/ ) {
 
@@ -137,24 +157,21 @@ on 'catalyst/fastcgi *' =>
             # Or fastcgi_host
             my $fastcgi_socket = "/tmp/$name.socket";
             my $fastcgi_file = "/tmp/$name.fcgi";
+            push @data,
+                fastcgi_socket => $fastcgi_socket,
+                fastcgi_file => $fastcgi_file,
+            ;
 
             # TODO Error in Catalyst::Engine::FastCGI dox?
+            process 'catalyst/fastcgi/apache2/standalone' => @data;
 
-            process 'catalyst/fastcgi/apache2/standalone' =>
-                %process,
-                fastcgi_socket => $fastcgi_socket,
-                fastcgi_file => $fastcgi_file
-            ;
+            process 'catalyst/fastcgi/start-stop' => @data;
 
-            process 'catalyst/fastcgi/monit' => # TODO /standalone
-                %process,
-            ;
+            process 'catalyst/fastcgi/monit' => @data;
         }
         elsif ( $mode eq 'dynamic' ) {
 
-            process 'catalyst/fastcgi/apache2/dynamic' =>
-                %process,
-            ;
+            process 'catalyst/fastcgi/apache2/dynamic' => @_;
         }
         else {
             croak "Don't understand mode \"$mode\""
@@ -281,20 +298,41 @@ catalyst/fastcgi/apache2/standalone
      </Directory>
 
 </VirtualHost>
+__ASSET__
 
-# Start your fastcgi socket with the following command:
-# #!/bin/bash
-# [% home %]/script/[% name %]_fastcgi.pl -l [% fastcgi_socket %] -n 5 -p [% home %]/[% name %]-fastcgi.pid
+catalyst/fastcgi/start-stop
+#!/bin/bash
 
-# Stop it with this one:
-# #!/bin/bash
-# kill -2 `cat [% home %]/[% name %]-fastcgi.pid`
+PID_FILE="[% home %]/[% name %]-fastcgi.pid"
+
+case "$1" in
+    start)
+        echo "Starting"
+        [% home %]/script/[% name %]_fastcgi.pl -l [% fastcgi_socket %] -n 5 -p $PID_FILE
+    ;;
+    stop)
+        if [ -s "$PID_FILE" ]; then
+            echo "Stopping"
+            PID=`cat "$PID_FILE"`
+            kill -TERM $PID
+        fi
+    ;;
+    restart)
+        $0 stop
+        $0 start
+    ;;
+    *)
+        echo "Don't understand \"$1\ ($*)"
+        echo "Usage: $0 start|stop|restart"
+        exit -1
+    ;;
+esac
 __ASSET__
 
 catalyst/fastcgi/monit
 check process [% name %]-fastcgi with pidfile [% home %]/[% name %]-fastcgi.pid
-  start program = "[% home %]/fastcgi-start"
-  stop program  = "[% home %]/fastcgi-stop"
+  start program = "[% home %]/fastcgi start"
+  stop program  = "[% home %]/fastcgi stop"
 __ASSET__
 
 catalyst/fastcgi/apache2/dynamic
@@ -324,7 +362,7 @@ __ASSET__
 
 catalyst/mod_perl/apache2
 PerlSwitches -I[% home %]/lib
-PerlModule [% name %]
+PerlModule [% package %]
 
 <VirtualHost *:80>
 
@@ -336,7 +374,7 @@ PerlModule [% name %]
 
     <Location />
         SetHandler          modperl
-        PerlResponseHandler [% name %]
+        PerlResponseHandler [% package %]
     </Location>
 
 </VirtualHost>
@@ -366,3 +404,13 @@ set httpd port 2822 and # This port needs to be unique on a system
 #   ...
 #
 __ASSET__
+
+__END__
+
+# Start your fastcgi socket with the following command:
+# #!/bin/bash
+# [% home %]/script/[% name %]_fastcgi.pl -l [% fastcgi_socket %] -n 5 -p [% home %]/[% name %]-fastcgi.pid
+
+# Stop it with this one:
+# #!/bin/bash
+# kill -2 `cat [% home %]/[% name %]-fastcgi.pid`
