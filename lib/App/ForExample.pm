@@ -166,6 +166,20 @@ on 'catalyst/fastcgi *' =>
 
 };
 
+on 'monit' => 
+    [qw/ home=s monit-home=s /] => sub {
+    my $ctx = shift;
+
+    my @home;
+    unless ($home[0] = $ctx->option( 'monit-home' )) {
+        $home[0] = $ctx->option( 'home' ) || "./";
+        push @home, qw/my-monit/;
+    }
+    my $home = dir @home;
+    $home = $home->absolute;
+    process 'monit' => ( home => $home );
+};
+
 on qr/.*/ => undef, sub {
     my $ctx = shift;
 
@@ -326,4 +340,29 @@ PerlModule [% name %]
     </Location>
 
 </VirtualHost>
+__ASSET__
+
+monit
+# Monit control file
+
+set daemon 120
+set logfile [% home %]/monit.log
+set pidfile [% home %]/monit.pid
+set statefile [% home %]/monit.state
+
+set httpd port 2822 and # This port needs to be unique on a system
+    use address localhost
+    allow localhost
+
+# Put this file in [% home %]/monitrc
+# Use this alias to control your monit daemon:
+#
+# alias 'my-monit'='monit -vc [% home %]/monitrc'
+#
+#   my-monit
+#   my-monit start all
+#   my-monit quit
+#   my-monit validate
+#   ...
+#
 __ASSET__

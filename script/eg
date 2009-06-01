@@ -1,0 +1,3 @@
+#!/bin/sh
+
+cd Eg && ../script/for-example $*
