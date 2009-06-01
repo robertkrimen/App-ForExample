@@ -40,6 +40,52 @@ sub process ($@) {
 
 use Getopt::Chain::Declare;
 
+on 'catalyst/mod_perl *' => 
+    [qw/ name=s home=s base=s host=s /] => sub {
+    my $ctx = shift;
+    
+    my ($server);
+    for ( @_ ) {
+        m/(apache2?)/ and ($server) = ($1) or
+
+        croak "Don't understand argument $_ (@_)";
+    }
+    ($server) = qw/apache2/;
+
+    # Catalyst name
+    my $name = $ctx->option( 'name' ) || 'xyzzy';
+
+    # Catalyst home
+    my $home = $ctx->option( 'home' ) || "./";
+    $home = dir( $home )->absolute;
+
+    # Catalyst application base
+    my $base = $ctx->option( 'base' ) || '/';
+    $base =~ s/^\/+//;
+
+    # Virtual host
+    my $host = $ctx->option( 'host' ) || "$name.example.com";
+
+    my %process = (
+        name => $name,
+        home => $home,
+        base => $base,
+        host => $host,
+    );
+
+    if ( $server =~ m/^apache2?$/ ) {
+
+        process 'catalyst/mod_perl/apache2' =>
+            %process,
+        ;
+
+    }
+    else {
+        croak "Don't understand server \"$server\""
+    }
+
+};
+
 on 'catalyst/fastcgi *' => 
     [qw/ name=s home=s base=s host=s /] => sub {
     my $ctx = shift;
@@ -59,6 +105,7 @@ on 'catalyst/fastcgi *' =>
 
     ($server, $server_module) = qw/apache2 fastcgi/ unless $server;
     ($mode) = qw/standalone/ unless $mode;
+
 
     # Catalyst name
     my $name = $ctx->option( 'name' ) || 'xyzzy';
@@ -93,13 +140,19 @@ on 'catalyst/fastcgi *' =>
 
             # TODO Error in Catalyst::Engine::FastCGI dox?
 
-            process 'catalyst/fastcgi/apache2' =>
+            process 'catalyst/fastcgi/apache2/standalone' =>
                 %process,
                 fastcgi_socket => $fastcgi_socket,
                 fastcgi_file => $fastcgi_file
             ;
 
-            process 'catalyst/fastcgi/monit' =>
+            process 'catalyst/fastcgi/monit' => # TODO /standalone
+                %process,
+            ;
+        }
+        elsif ( $mode eq 'dynamic' ) {
+
+            process 'catalyst/fastcgi/apache2/dynamic' =>
                 %process,
             ;
         }
@@ -121,7 +174,8 @@ Usage: for-example EXAMPLE
 
 Where EXAMPLE is one of:
 
-    catalyst/fastcgi apache2 standalone
+    catalyst/fastcgi apache2 standalone|dynamic
+    catalyst/mod_perl apache2
 
 _END_
 };
@@ -188,7 +242,7 @@ __PACKAGE__; # End of App::ForExample
 
 __DATA__
 
-catalyst/fastcgi/apache2
+catalyst/fastcgi/apache2/standalone
 # vim: set ft=apache
 <VirtualHost *:80>
 
@@ -202,6 +256,7 @@ catalyst/fastcgi/apache2
     Alias [% alias_base %] [% fastcgi_file %]/
 
     # Optionally, rewrite the path when accessed without a trailing slash
+    # TODO If not /
     RewriteRule ^/[% base %]\$ [% base %]/ [R]
 
      <Directory "[% home %]/root">
@@ -226,4 +281,49 @@ catalyst/fastcgi/monit
 check process [% name %]-fastcgi with pidfile [% home %]/[% name %]-fastcgi.pid
   start program = "[% home %]/fastcgi-start"
   stop program  = "[% home %]/fastcgi-stop"
+__ASSET__
+
+catalyst/fastcgi/apache2/dynamic
+<VirtualHost *:80>
+
+    ServerName [% host %]
+    ServerAlias www.[% host %]
+
+    CustomLog "|/usr/bin/cronolog /var/log/apache2/[% host %]-%Y-%m.access.log -S /var/log/apache2/[% host %].access.log" combined
+    ErrorLog "|/usr/bin/cronolog /var/log/apache2/[% host %]-%Y-%m.error.log -S /var/log/apache2/[% host %].error.log"
+
+    Alias [% alias_base %] [% home %]/script/[% name %]_fastcgi.pl
+
+    # TODO If not /
+    RewriteRule ^/[% base %]\$ [% base %]/ [R]
+
+    <Directory "[% home %]/script">
+       Options +ExecCGI
+    </Directory>
+
+    <Files [% name %]_fastcgi.pl>
+       SetHandler fastcgi-script
+    </Files>
+
+</VirtualHost>
+__ASSET__
+
+catalyst/mod_perl/apache2
+PerlSwitches -I[% home %]/lib
+PerlModule [% name %]
+
+<VirtualHost *:80>
+
+    ServerName [% host %]
+    ServerAlias www.[% host %]
+
+    CustomLog "|/usr/bin/cronolog /var/log/apache2/[% host %]-%Y-%m.access.log -S /var/log/apache2/[% host %].access.log" combined
+    ErrorLog "|/usr/bin/cronolog /var/log/apache2/[% host %]-%Y-%m.error.log -S /var/log/apache2/[% host %].error.log"
+
+    <Location />
+        SetHandler          modperl
+        PerlResponseHandler [% name %]
+    </Location>
+
+</VirtualHost>
 __ASSET__
