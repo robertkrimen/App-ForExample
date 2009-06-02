@@ -5,6 +5,7 @@
 for test in \
     "fastcgi/apache2/standalone" \
     "fastcgi/apache2/dynamic" \
+    "fastcgi/apache2/static" \
     "fastcgi/lighttpd/standalone" \
     "fastcgi/lighttpd/static" \
     "fastcgi/nginx"

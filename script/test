@@ -111,6 +111,14 @@ elsif ( $run eq 'fastcgi/apache2/dynamic' ) {
     }
     ;
 }
+elsif ( $run eq 'fastcgi/apache2/static' ) {
+    test \&start_apache2, "$Eg_home/apache2/fastcgi-static" => "$apache2/$Eg_cfg", sub {
+        my $response = shift;
+        like $response->header( 'Server' ), qr/^Apache\/2/;
+        like $response->decoded_content, qr/CATALYST_ENGINE: FastCGI/;
+    }
+    ;
+}
 elsif ( $run eq 'fastcgi/lighttpd/standalone' ) {
     test \&start_lighttpd, "$Eg_home/lighttpd/standalone" => "$lighttpd/$Eg_cfg", sub {
         my $response = shift;

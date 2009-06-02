@@ -79,6 +79,7 @@ sub parse_catalyst ($) {
         underscore_name => $underscore_name,
         home => $home,
         base => $base,
+        alias_base => $alias_base,
         host => $host
     ;
     return { @data };
@@ -162,6 +163,9 @@ on 'catalyst/fastcgi *' =>
         }
         elsif ( $mode eq 'dynamic' ) {
             process 'catalyst/fastcgi/apache2/dynamic' => @data;
+        }
+        elsif ( $mode eq 'static' ) {
+            process 'catalyst/fastcgi/apache2/static' => @data;
         }
         else {
             croak "Don't understand mode \"$mode\""
@@ -370,6 +374,24 @@ catalyst/fastcgi/apache2/dynamic
     <Files [% underscore_name %]_fastcgi.pl>
        SetHandler fastcgi-script
     </Files>
+
+</VirtualHost>
+__ASSET__
+
+catalyst/fastcgi/apache2/static
+<VirtualHost *:80>
+
+    ServerName [% host %]
+    ServerAlias www.[% host %]
+
+    CustomLog "|/usr/bin/cronolog /var/log/apache2/[% host %]-%Y-%m.access.log -S /var/log/apache2/[% host %].access.log" combined
+    ErrorLog "|/usr/bin/cronolog /var/log/apache2/[% host %]-%Y-%m.error.log -S /var/log/apache2/[% host %].error.log"
+
+    FastCgiServer [% home %]/script/[% underscore_name %]_fastcgi.pl -processes 3
+    Alias [% alias_base %] [% home %]/script/[% underscore_name %]_fastcgi.pl/
+
+    # TODO If not /
+    RewriteRule ^/[% base %]\$ [% base %]/ [R]
 
 </VirtualHost>
 __ASSET__
