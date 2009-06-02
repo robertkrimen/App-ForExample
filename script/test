@@ -1,0 +1,136 @@
+#!/usr/bin/perl
+
+use strict;
+use warnings;
+
+use LWP::UserAgent;
+use Carp;
+
+my $run = shift @ARGV or croak "You didn't specify anything to test (fastcgi/apache2/standalone, mod_perl, fastcgi/lighttpd/static, ...)";
+
+sub stop () {
+    system 'sudo /etc/init.d/apache2 stop';
+    system 'sudo /etc/init.d/lighttpd stop';
+    system 'sudo /etc/init.d/nginx stop';
+}
+
+sub start_apache2 () {
+    system 'sudo /etc/init.d/apache2 start';
+}
+
+sub start_lighttpd () {
+    system 'sudo /etc/init.d/lighttpd start';
+}
+
+sub start_nginx () {
+    system 'sudo /etc/init.d/nginx start';
+}
+
+my $apache2 = '/etc/apache2/sites-enabled';
+my $lighttpd = '/etc/lighttpd/conf-enabled';
+
+my $Eg_home = '/home/rob/develop/App-ForExample/Eg';
+my $Eg_cfg = 'Eg.conf';
+my $url = 'http://eg.localhost';
+my $agent = LWP::UserAgent->new;
+
+my $run_t = $run;
+$run_t =~ s!/+!-!g;
+$run_t = "xt/test/$run_t.t";
+
+sub _symlink ($$) {
+    my ( $from, $to ) = @_;
+    unlink $to;
+    symlink $from, $to or die "Couldn't symlink $from => $to: $!";
+}
+
+sub test ($$$;$$) {
+    my ( $start, $from, $to, $test, $test_static ) = @_;
+    stop;
+    _symlink $from => $to;
+    &$start;
+
+    if ( $test ) {
+        my $response = $agent->get( "$url" );
+
+        print "---\n", $response->as_string;
+
+        die "Couldn't get /: ", $response->status_line unless $response->is_success;
+
+        $test->( $response )
+    }
+    
+    if ( $test_static ) {
+        my $response = $agent->get( "$url/static/css.css" );
+
+        print "---\n", $response->as_string;
+
+        die "Couldn't get static: ", $response->status_line unless $response->is_success;
+
+        $test_static->( $response )
+    }
+
+    unlink $to or warn "Couldn't unlink $to: $!";
+}
+
+my $exit = 0;
+
+sub fail ($) {
+    $exit = -1;
+    warn "*** FAIL: ", shift, "\n";
+}
+
+sub fail_have_want ($$) {
+    my ($have, $want) = @_;
+
+    fail "\n\thave: $have\n\twant: $want";
+}
+
+sub like ($$) {
+    my ($have, $want) = @_;
+    
+    unless ($have =~ $want) {
+         fail_have_want $have, $want;
+    }
+}
+
+if ( $run eq 'fastcgi/apache2/standalone' ) {
+    test \&start_apache2, "$Eg_home/apache2/fastcgi-standalone" => "$apache2/$Eg_cfg", sub {
+        my $response = shift;
+        like $response->header( 'Server' ), qr/Apache\/2/;
+        like $response->decoded_content, qr/CATALYST_ENGINE: FastCGI/;
+    }
+    ;
+}
+elsif ( $run eq 'fastcgi/apache2/dynamic' ) {
+    test \&start_apache2, "$Eg_home/apache2/fastcgi-dynamic" => "$apache2/$Eg_cfg", sub {
+        my $response = shift;
+        like $response->header( 'Server' ), qr/Apache\/2/;
+        like $response->decoded_content, qr/CATALYST_ENGINE: FastCGI/;
+    }
+    ;
+}
+elsif ( $run eq 'fastcgi/lighttpd/standalone' ) {
+    test \&start_lighttpd, "$Eg_home/lighttpd/standalone" => "$lighttpd/$Eg_cfg", sub {
+        my $response = shift;
+        like $response->header( 'Server' ), qr/lighttpd/;
+        like $response->decoded_content, qr/CATALYST_ENGINE: FastCGI/;
+    }
+    ;
+}
+elsif ( $run eq 'fastcgi/lighttpd/static' ) {
+    test \&start_lighttpd, "$Eg_home/lighttpd/static" => "$lighttpd/$Eg_cfg", sub {
+        my $response = shift;
+        like $response->header( 'Server' ), qr/lighttpd/;
+        like $response->decoded_content, qr/CATALYST_ENGINE: FastCGI/;
+        like $response->decoded_content, qr/PHP_FCGI_CHILDREN: 1/;
+    }
+    ;
+}
+else {
+    croak "Don't understand \"$run\"";
+}
+
+print "\nPASS!\n" unless $exit;
+
+exit $exit;
