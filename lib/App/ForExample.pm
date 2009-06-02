@@ -169,7 +169,17 @@ on 'catalyst/fastcgi *' =>
         }
     }
     elsif ( $server =~ m/^lighttpd$/ ) {
-        process 'catalyst/fastcgi/lighttpd/standalone' => @data;
+
+        if ( $mode eq 'standalone' ) {
+            process 'catalyst/fastcgi/lighttpd/standalone' => @data;
+        }
+        elsif ( $mode eq 'static' ) {
+            process 'catalyst/fastcgi/lighttpd/static' => @data;
+        }
+        else {
+            croak "Don't understand mode \"$mode\""
+        }
+        
     }
     else {
         croak "Don't understand server \"$server\""
@@ -384,6 +394,25 @@ $HTTP["host"] =~ "^(www.)?[% host %]" {
             "[% name %]" => (
                 "socket" => "/tmp/[% name %].socket",
                 "check-local" => "disable"
+            )
+        )
+    )
+}
+__ASSET__
+
+catalyst/fastcgi/lighttpd/static
+server.modules += ( "mod_fastcgi" )
+
+$HTTP["host"] =~ "^(www.)?[% host %]" {
+    fastcgi.server = (
+        "" => (
+            "[% name%]" => (
+                "socket" => "/tmp/lighttpd-[% name %].socket",
+                "check-local" => "disable",
+                "bin-path" => "[% home %]/script/[% underscore_name %]_fastcgi.pl",
+                "min-procs"    => 2,
+                "max-procs"    => 5,
+                "idle-timeout" => 20
             )
         )
     )
