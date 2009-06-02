@@ -1,0 +1,16 @@
+server.modules += ( "mod_fastcgi" )
+
+$HTTP["host"] =~ "^(www.)?eg.localhost" {
+    fastcgi.server = (
+        "" => (
+            "eg" => (
+                "socket" => "/tmp/lighttpd-eg.socket",
+                "check-local" => "disable",
+                "bin-path" => "/home/rob/develop/App-ForExample/Eg/script/eg_fastcgi.pl",
+                "min-procs"    => 2,
+                "max-procs"    => 5,
+                "idle-timeout" => 20
+            )
+        )
+    )
+}

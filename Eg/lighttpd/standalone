@@ -1,0 +1,12 @@
+server.modules += ( "mod_fastcgi" )
+
+$HTTP["host"] =~ "^(www.)?eg.localhost" {
+    fastcgi.server = (
+        "" => (
+            "eg" => (
+                "socket" => "/tmp/eg.socket",
+                "check-local" => "disable"
+            )
+        )
+    )
+}

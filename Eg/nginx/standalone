@@ -1,0 +1,7 @@
+server {
+    server_name eg.localhost;
+    location / {
+        include fastcgi_params;
+        fastcgi_pass unix:/tmp/eg.socket;
+    }
+}

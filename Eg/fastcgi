@@ -1,0 +1,25 @@
+#!/bin/bash
+
+PID_FILE="/home/rob/develop/App-ForExample/Eg/eg-fastcgi.pid"
+
+case "$1" in
+    start)
+        echo "Starting"
+        /home/rob/develop/App-ForExample/Eg/script/eg_fastcgi.pl -l /tmp/eg.socket -n 5 -p $PID_FILE
+    ;;
+    stop)
+        if [ -s "$PID_FILE" ]; then
+            echo "Stopping"
+            PID=`cat "$PID_FILE"`
+            kill -TERM $PID
+        fi
+    ;;
+    restart)
+        $0 stop
+        $0 start
+    ;;
+    *)  
+        echo "Usage: $0 start|stop|restart"
+        exit -1
+    ;;
+esac
