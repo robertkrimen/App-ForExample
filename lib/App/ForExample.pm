@@ -13,6 +13,8 @@ Version 0.01
 
 =cut
 
+# TODO --help, --host to --hostname, better start-stop, integrate fastcgi_socket, allow fastcgi_socket to be host:port, add alert e-mail to monit
+
 our $VERSION = '0.01';
 
 #use App::ForExample::ModuleEmbedCatalog;
@@ -124,7 +126,7 @@ on 'catalyst/fastcgi *' =>
         m/(apache2?)(?:=(?:mod_)?(fastcgi|fcgid))?/ and ($server, $server_module) = ($1, $2) or
         m/lighttpd/ and $server = 'lighttpd' or
         m/nginx/ and $server = 'nginx' or
-        m/start-stop/ and $server = 'nginx' or # Not really a server, but...
+        m/(monit|start-stop)/ and $server = $1 or # Not really a server, but...
 
         m/standalone/ and $mode = 'standalone' or
         m/static/ and $mode = 'static' or
@@ -243,13 +245,17 @@ on 'help' =>
     undef, sub {
 
     print <<_END_;
-Usage: for-example EXAMPLE
+Usage: for-example ...
 
-    catalyst/fastcgi <web-server> <fastcgi-method>
+Where ... can be:
+
+    catalyst/fastcgi <http-daemon> <fastcgi-method>
+
+        Generate a Catalyst FastCGI configuration (for the specified http-daemon and fastcgi-method)
 
         --package           The Catalyst package for your application (e.g. Project::Xyzzy or My::Application)
-        --home              The path to your Catalyst home directory, default:  . (The current directory)
-        --base              The base for your application, default:             / (At the root)
+        --home              The path to your Catalyst home directory, default: . (The current directory)
+        --base              The base for your application, default: / (At the root)
         --host              The hostname for your application (e.g. example.com)
         --no-monit          Do not print out a monit configuration, if applicable
         --no-start-stop     Do not print out a start/stop script, if applicable
@@ -262,20 +268,23 @@ Usage: for-example EXAMPLE
         lighttpd static     lighttpd with static FastCGI
 
         nginx               nginx with standalone FastCGI (the only kind supported)
-        
 
+        monit               A monit configuration for a standalone FastCGI setup
+        start-stop          A start-stop script for a standalone FastCGI setup
+        
     catalyst/mod_perl
+
+        Generate a mod_perl2 (for Apache2) Catalyst configuration
 
         See the above section on 'catalyst/fastcgi' for an option synopsis
 
-        This will generate a mod_perl2 (for Apache2) Catalyst configuration
-
     monit
+
+        Generate a basic, stripped-down monit configuration suitable for a non-root user
 
         --home          The directory containing my-monit (<home>/my-monit)
         --monit-home    Put everything in <monit-home>, --home will be ignored
 
-        Generate a basic, stripped down monit configuration suitable for a non-root user
 _END_
 };
 
@@ -283,9 +292,9 @@ on qr/.*/ => undef, sub {
     my $ctx = shift;
 
     print <<_END_
-Usage: for-example EXAMPLE
+Usage: for-example ...
 
-Where EXAMPLE is one of:
+Where ... can be:
 
     catalyst/fastcgi apache2 standalone|static|dynamic
     catalyst/fastcgi lighttpd standalone|static
