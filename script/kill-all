@@ -1,0 +1,6 @@
+#!/bin/bash
+
+ps aux | grep 'perl-fcgi'
+for process in `ps aux | grep 'perl-fcgi' | awk '{ print $2 }'`; do kill $process; done
+sleep 1
+ps aux | grep 'perl-fcgi'

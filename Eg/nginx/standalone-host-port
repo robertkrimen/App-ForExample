@@ -3,7 +3,7 @@ server {
     location / {
         include fastcgi_params;
         
-        fastcgi_pass unix:/tmp/eg.socket;
+        fastcgi_pass 127.0.0.1:45450;
         
     }
 }

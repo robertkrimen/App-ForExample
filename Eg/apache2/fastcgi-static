@@ -1,3 +1,4 @@
+# vim: set filetype=apache
 <VirtualHost *:80>
 
     ServerName eg.localhost
@@ -7,9 +8,8 @@
     ErrorLog "|/usr/bin/cronolog /var/log/apache2/eg.localhost-%Y-%m.error.log -S /var/log/apache2/eg.localhost.error.log"
 
     FastCgiServer /home/rob/develop/App-ForExample/Eg/script/eg_fastcgi.pl -processes 3
+
     Alias / /home/rob/develop/App-ForExample/Eg/script/eg_fastcgi.pl/
 
-    # TODO If not /
-    RewriteRule ^/\$ / [R]
 
 </VirtualHost>

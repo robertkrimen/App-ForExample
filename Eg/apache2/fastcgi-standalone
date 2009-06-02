@@ -1,18 +1,18 @@
-# vim: set ft=apache
+# vim: set filetype=apache
 <VirtualHost *:80>
 
     ServerName eg.localhost
+    ServerAlias www.eg.localhost
 
     CustomLog "|/usr/bin/cronolog /var/log/apache2/eg.localhost-%Y-%m.access.log -S /var/log/apache2/eg.localhost.access.log" combined
     ErrorLog "|/usr/bin/cronolog /var/log/apache2/eg.localhost-%Y-%m.error.log -S /var/log/apache2/eg.localhost.error.log"
 
     FastCgiExternalServer /tmp/eg.fcgi -socket /tmp/eg.socket
+
     Alias / /tmp/eg.fcgi/
 
-    # Optionally, rewrite the path when accessed without a trailing slash
-    RewriteRule ^/\$ / [R]
 
-     <Directory "/home/develop/rob/App-ForExample/Eg/root">
+     <Directory "/home/rob/develop/App-ForExample/Eg/root">
          Options Indexes FollowSymLinks
          AllowOverride All
          Order allow,deny
@@ -20,6 +20,3 @@
      </Directory>
 
 </VirtualHost>
-
-# Start your fastcgi socket with the following command:
-# script/eg_fastcgi.pl -l /tmp/eg.socket -n 5

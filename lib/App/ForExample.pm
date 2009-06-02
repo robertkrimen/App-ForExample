@@ -13,7 +13,9 @@ Version 0.01
 
 =cut
 
-# TODO --help, --host to --hostname, better start-stop, integrate fastcgi_socket, allow fastcgi_socket to be host:port, add alert e-mail to monit
+# TODO Better start-stop script
+# TODO Add alert e-mail to monit
+# TODO Less strict getopt-chain parsing
 
 our $VERSION = '0.01';
 
@@ -49,17 +51,18 @@ sub package2name ($) {
     my $name = $package;
     $name =~ s/::/-/g;
     $name = lc $name;
-    my $underscore_name = $name;
-    $underscore_name =~ s/-/_/g;
-    return ( $name, $underscore_name );
+    my $name_underscore = $name;
+    $name_underscore =~ s/-/_/g;
+    return ( $name, $name_underscore );
 }
 
+my @parse_catalyst = qw/ package=s name=s home=s base=s hostname=s fastcgi-script=s fastcgi-socket=s fastcgi-socket-path=s/;
 sub parse_catalyst ($) {
     my $ctx = shift;
 
     # Catalyst package
     my $package = $ctx->option( 'package' ) || 'Project::Xyzzy';
-    my ($package_name, $underscore_name) = package2name $package;
+    my ($package_name, $name_underscore) = package2name $package;
 
     # Catalyst name
     my $name = $ctx->option( 'name' );
@@ -74,26 +77,109 @@ sub parse_catalyst ($) {
     $base =~ s/^\/+//;
     my $alias_base = $base eq '' ? '/' : "/$base/";
 
-    # Virtual host
-    my $host = $ctx->option( 'host' ) || "$name.example.com";
+    # Hostname
+    my $hostname = $ctx->option( 'hostname' ) || "$name.example.com";
+
+    my $fastcgi_script = $ctx->option( 'fastcgi-script' );
+    $fastcgi_script = join '/', $home, 'script', "${name_underscore}_fastcgi.pl" unless defined $fastcgi_script;
+    my $fastcgi_script_basename = file( $fastcgi_script )->basename;
+    my $fastcgi_socket = $ctx->option( 'fastcgi-socket' );
+    $fastcgi_socket = "/tmp/$name.socket" unless defined $fastcgi_socket;
+    my $fastcgi_host_port;
+    if ( $fastcgi_socket =~ m/^(.+):(\d+)$/ ) {
+        $fastcgi_host_port = [ $1, $2 ];
+    }
+    my $fastcgi_socket_path = $ctx->option( 'fastcgi-socket-path' );
+    $fastcgi_socket_path = "/tmp/$name.fcgi" unless defined $fastcgi_socket_path;
+    my $fastcgi_pid_file = $ctx->option( 'fastcgi-pid-file' );
+    $fastcgi_pid_file = "$name-fastcgi.pid" unless $fastcgi_pid_file;
+    $fastcgi_pid_file = join '/', $home, $fastcgi_pid_file unless $fastcgi_pid_file =~ m/^\//;
 
     my @data;
     push @data, package => $package,
         name => $name,
-        underscore_name => $underscore_name,
+        name_underscore => $name_underscore,
         home => $home,
         base => $base,
         alias_base => $alias_base,
-        host => $host
+        hostname => $hostname,
+        fastcgi_script => $fastcgi_script,
+        fastcgi_script_basename => $fastcgi_script_basename,
+        fastcgi_socket => $fastcgi_socket,
+        fastcgi_host_port => $fastcgi_host_port,
+        fastcgi_socket_path => $fastcgi_socket_path,
+        fastcgi_pid_file => $fastcgi_pid_file,
     ;
     return { @data };
 }
+
+sub do_help ($) {
+    my $ctx = shift;
+
+    print <<_END_;
+Usage: for-example ...
+
+Where ... can be:
+
+    catalyst/fastcgi <http-daemon> <fastcgi-method>
+
+        Generate a Catalyst FastCGI configuration (for the specified http-daemon and fastcgi-method)
+
+        --package           The Catalyst package for your application (e.g. Project::Xyzzy or My::Application)
+        --home              The path to your Catalyst home directory, default: . (The current directory)
+        --base              The base for your application, default: / (At the root)
+        --hostname          The hostname for your application (e.g. example.com)
+        --no-monit          Do not print out a monit configuration, if applicable
+        --no-start-stop     Do not print out a start/stop script, if applicable
+
+        apache2 standalone  Apache2 with standalone FastCGI 
+        apache2 static      Apache2 with static FastCGI
+        apache2 dynamic     Apache2 with dynamic FastCGI
+
+        lighttpd standalone lighttpd with dynamic FastCGI
+        lighttpd static     lighttpd with static FastCGI
+
+        nginx               nginx with standalone FastCGI (the only kind supported)
+
+        monit               A monit configuration for a standalone FastCGI setup
+        start-stop          A start-stop script for a standalone FastCGI setup
+        
+    catalyst/mod_perl
+
+        Generate a mod_perl2 (for Apache2) Catalyst configuration
+
+        See the above section on 'catalyst/fastcgi' for an option synopsis
+
+    monit
+
+        Generate a basic, stripped-down monit configuration suitable for a non-root user
+
+        --home          The directory containing my-monit (<home>/my-monit)
+        --monit-home    Put everything in <monit-home>, --home will be ignored
+
+For example:
+
+    for-example catalyst/fastcgi apache2 standalone --package My::Application --hostname example.com
+    for-example monit --monit-home \$HOME/my-monit
+    for-example catalyst/mod_perl --package Project::Xyzzy --hostname xyzzy.com --home Project-Xyzzy
+
+_END_
+}
+
+start [qw/ help|h /], sub {
+    my $ctx = shift;
+
+    if ( $ctx->option( 'help' ) || $ctx->last ) {
+        do_help $ctx;
+        exit 0;
+    }
+};
 
 #rewrite qr#catalyst/modperl[12]?# => 'catalyst/mod_perl';
 rewrite qr#catalyst/(?:mod_perl[12]|modperl[12]?)# => 'catalyst/mod_perl';
 
 on 'catalyst/mod_perl *' => 
-    [qw/ package=s name=s home=s base=s host=s /] => sub {
+    [ @parse_catalyst ] => sub {
     my $ctx = shift;
     
     my ($server);
@@ -118,7 +204,7 @@ on 'catalyst/mod_perl *' =>
 };
 
 on 'catalyst/fastcgi *' => 
-    [qw/ package=s name=s home=s base=s host=s no-monit no-start-stop /] => sub {
+    [ @parse_catalyst, qw/ fastcgi-pid-file=s no-bundle no-monit no-start-stop /] => sub {
     my $ctx = shift;
     
     my ($server, $server_module, $mode);
@@ -140,8 +226,10 @@ on 'catalyst/fastcgi *' =>
 
     my @data;
 
-    my $no_monit = $ctx->option( 'no-monit' );
-    my $no_start_stop = $ctx->option( 'no-start-stop' );
+    my $no_bundle = $ctx->option( 'no-bundle' );
+    my $no_monit = $ctx->option( 'no-monit' ) || $no_bundle;
+    my $no_start_stop = $ctx->option( 'no-start-stop' ) || $no_bundle;
+
     my $catalyst_data = parse_catalyst $ctx;
     push @data, %$catalyst_data;
     my $name = $catalyst_data->{name};
@@ -149,14 +237,6 @@ on 'catalyst/fastcgi *' =>
     if ( $server =~ m/^apache2?$/ ) {
 
         if ( $mode eq 'standalone' ) {
-            # Or fastcgi_host
-            my $fastcgi_socket = "/tmp/$name.socket";
-            my $fastcgi_file = "/tmp/$name.fcgi";
-            push @data,
-                fastcgi_socket => $fastcgi_socket,
-                fastcgi_file => $fastcgi_file,
-            ;
-
             # TODO Error in Catalyst::Engine::FastCGI dox?
             process 'catalyst/fastcgi/apache2/standalone' => @data;
             unless ($no_start_stop) {
@@ -243,58 +323,19 @@ on 'monit' =>
 
 on 'help' => 
     undef, sub {
+    my $ctx = shift;
 
-    print <<_END_;
-Usage: for-example ...
-
-Where ... can be:
-
-    catalyst/fastcgi <http-daemon> <fastcgi-method>
-
-        Generate a Catalyst FastCGI configuration (for the specified http-daemon and fastcgi-method)
-
-        --package           The Catalyst package for your application (e.g. Project::Xyzzy or My::Application)
-        --home              The path to your Catalyst home directory, default: . (The current directory)
-        --base              The base for your application, default: / (At the root)
-        --host              The hostname for your application (e.g. example.com)
-        --no-monit          Do not print out a monit configuration, if applicable
-        --no-start-stop     Do not print out a start/stop script, if applicable
-
-        apache2 standalone  Apache2 with standalone FastCGI 
-        apache2 static      Apache2 with static FastCGI
-        apache2 dynamic     Apache2 with dynamic FastCGI
-
-        lighttpd standalone lighttpd with dynamic FastCGI
-        lighttpd static     lighttpd with static FastCGI
-
-        nginx               nginx with standalone FastCGI (the only kind supported)
-
-        monit               A monit configuration for a standalone FastCGI setup
-        start-stop          A start-stop script for a standalone FastCGI setup
-        
-    catalyst/mod_perl
-
-        Generate a mod_perl2 (for Apache2) Catalyst configuration
-
-        See the above section on 'catalyst/fastcgi' for an option synopsis
-
-    monit
-
-        Generate a basic, stripped-down monit configuration suitable for a non-root user
-
-        --home          The directory containing my-monit (<home>/my-monit)
-        --monit-home    Put everything in <monit-home>, --home will be ignored
-
-_END_
+    do_help $ctx;
 };
 
 on qr/.*/ => undef, sub {
     my $ctx = shift;
 
-    print <<_END_
-Usage: for-example ...
+    my $path = join ' ', $ctx->path;
+    print <<_END_;
+Don't understand command: $path
 
-Where ... can be:
+Usage: for-example [--help] ...
 
     catalyst/fastcgi apache2 standalone|static|dynamic
     catalyst/fastcgi lighttpd standalone|static
@@ -306,6 +347,7 @@ Where ... can be:
     help
 
 _END_
+    exit -1;
 };
 
 no Getopt::Chain::Declare;
@@ -367,209 +409,3 @@ under the same terms as Perl itself.
 =cut
 
 __PACKAGE__; # End of App::ForExample
-
-__DATA__
-
-catalyst/fastcgi/apache2/standalone
-# vim: set ft=apache
-<VirtualHost *:80>
-
-    ServerName [% host %]
-    ServerAlias www.[% host %]
-
-    CustomLog "|/usr/bin/cronolog /var/log/apache2/[% host %]-%Y-%m.access.log -S /var/log/apache2/[% host %].access.log" combined
-    ErrorLog "|/usr/bin/cronolog /var/log/apache2/[% host %]-%Y-%m.error.log -S /var/log/apache2/[% host %].error.log"
-
-    FastCgiExternalServer [% fastcgi_file %] -socket [% fastcgi_socket %]
-    Alias [% alias_base %] [% fastcgi_file %]/
-
-    # Optionally, rewrite the path when accessed without a trailing slash
-    # TODO If not /
-    RewriteRule ^/[% base %]\$ [% base %]/ [R]
-
-     <Directory "[% home %]/root">
-         Options Indexes FollowSymLinks
-         AllowOverride All
-         Order allow,deny
-         Allow from all
-     </Directory>
-
-</VirtualHost>
-__ASSET__
-
-catalyst/fastcgi/start-stop
-#!/bin/bash
-
-PID_FILE="[% home %]/[% name %]-fastcgi.pid"
-
-case "$1" in
-    start)
-        echo "Starting"
-        [% home %]/script/[% underscore_name %]_fastcgi.pl -l [% fastcgi_socket %] -n 5 -p $PID_FILE
-    ;;
-    stop)
-        if [ -s "$PID_FILE" ]; then
-            echo "Stopping"
-            PID=`cat "$PID_FILE"`
-            kill -TERM $PID
-        fi
-    ;;
-    restart)
-        $0 stop
-        $0 start
-    ;;
-    *)
-        echo "Don't understand \"$1\ ($*)"
-        echo "Usage: $0 start|stop|restart"
-        exit -1
-    ;;
-esac
-__ASSET__
-
-catalyst/fastcgi/monit
-check process [% name %]-fastcgi with pidfile [% home %]/[% name %]-fastcgi.pid
-  start program = "[% home %]/fastcgi start"
-  stop program  = "[% home %]/fastcgi stop"
-__ASSET__
-
-catalyst/fastcgi/apache2/dynamic
-<VirtualHost *:80>
-
-    ServerName [% host %]
-    ServerAlias www.[% host %]
-
-    CustomLog "|/usr/bin/cronolog /var/log/apache2/[% host %]-%Y-%m.access.log -S /var/log/apache2/[% host %].access.log" combined
-    ErrorLog "|/usr/bin/cronolog /var/log/apache2/[% host %]-%Y-%m.error.log -S /var/log/apache2/[% host %].error.log"
-
-    Alias [% alias_base %] [% home %]/script/[% name %]_fastcgi.pl
-
-    # TODO If not /
-    RewriteRule ^/[% base %]\$ [% base %]/ [R]
-
-    <Directory "[% home %]/script">
-       Options +ExecCGI
-    </Directory>
-
-    <Files [% underscore_name %]_fastcgi.pl>
-       SetHandler fastcgi-script
-    </Files>
-
-</VirtualHost>
-__ASSET__
-
-catalyst/fastcgi/apache2/static
-<VirtualHost *:80>
-
-    ServerName [% host %]
-    ServerAlias www.[% host %]
-
-    CustomLog "|/usr/bin/cronolog /var/log/apache2/[% host %]-%Y-%m.access.log -S /var/log/apache2/[% host %].access.log" combined
-    ErrorLog "|/usr/bin/cronolog /var/log/apache2/[% host %]-%Y-%m.error.log -S /var/log/apache2/[% host %].error.log"
-
-    FastCgiServer [% home %]/script/[% underscore_name %]_fastcgi.pl -processes 3
-    Alias [% alias_base %] [% home %]/script/[% underscore_name %]_fastcgi.pl/
-
-    # TODO If not /
-    RewriteRule ^/[% base %]\$ [% base %]/ [R]
-
-</VirtualHost>
-__ASSET__
-
-catalyst/mod_perl/apache2
-PerlSwitches -I[% home %]/lib
-PerlModule [% package %]
-
-<VirtualHost *:80>
-
-    ServerName [% host %]
-    ServerAlias www.[% host %]
-
-    CustomLog "|/usr/bin/cronolog /var/log/apache2/[% host %]-%Y-%m.access.log -S /var/log/apache2/[% host %].access.log" combined
-    ErrorLog "|/usr/bin/cronolog /var/log/apache2/[% host %]-%Y-%m.error.log -S /var/log/apache2/[% host %].error.log"
-
-    <Location />
-        SetHandler          modperl
-        PerlResponseHandler [% package %]
-    </Location>
-
-</VirtualHost>
-__ASSET__
-
-catalyst/fastcgi/lighttpd/standalone
-server.modules += ( "mod_fastcgi" )
-
-$HTTP["host"] =~ "^(www.)?[% host %]" {
-    fastcgi.server = (
-        "" => (
-            "[% name %]" => (
-                "socket" => "/tmp/[% name %].socket",
-                "check-local" => "disable"
-            )
-        )
-    )
-}
-__ASSET__
-
-catalyst/fastcgi/lighttpd/static
-server.modules += ( "mod_fastcgi" )
-
-$HTTP["host"] =~ "^(www.)?[% host %]" {
-    fastcgi.server = (
-        "" => (
-            "[% name%]" => (
-                "socket" => "/tmp/lighttpd-[% name %].socket",
-                "check-local" => "disable",
-                "bin-path" => "[% home %]/script/[% underscore_name %]_fastcgi.pl",
-                "min-procs"    => 2,
-                "max-procs"    => 5,
-                "idle-timeout" => 20
-            )
-        )
-    )
-}
-__ASSET__
-
-catalyst/fastcgi/nginx
-server {
-    server_name [% host %];
-    location / {
-        include fastcgi_params;
-        fastcgi_pass unix:/tmp/[% name %].socket;
-    }
-}
-__ASSET__
-
-monit
-# Monit control file
-
-set daemon 120
-set logfile [% home %]/log
-set pidfile [% home %]/pid
-set statefile [% home %]/state
-
-set httpd port 2822 and # This port needs to be unique on a system
-    use address localhost
-    allow localhost
-
-# Put this file in [% home %]/monitrc
-# Use this alias to control your monit daemon:
-#
-# alias 'my-monit'='monit -vc [% home %]/monitrc'
-#
-#   my-monit
-#   my-monit start all
-#   my-monit quit
-#   my-monit validate
-#   ...
-#
-__ASSET__
-
-__END__
-
-# Start your fastcgi socket with the following command:
-# #!/bin/bash
-# [% home %]/script/[% name %]_fastcgi.pl -l [% fastcgi_socket %] -n 5 -p [% home %]/[% name %]-fastcgi.pid
-
-# Stop it with this one:
-# #!/bin/bash
-# kill -2 `cat [% home %]/[% name %]-fastcgi.pid`

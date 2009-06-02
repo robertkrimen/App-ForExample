@@ -95,8 +95,18 @@ sub like ($$) {
     }
 }
 
-if ( $run eq 'fastcgi/apache2/standalone' ) {
+if (0) {
+}
+elsif ( $run eq 'fastcgi/apache2/standalone' ) {
     test \&start_apache2, "$Eg_home/apache2/fastcgi-standalone" => "$apache2/$Eg_cfg", sub {
+        my $response = shift;
+        like $response->header( 'Server' ), qr/^Apache\/2/;
+        like $response->decoded_content, qr/CATALYST_ENGINE: FastCGI/;
+    }
+    ;
+}
+elsif ( $run eq 'fastcgi/apache2/standalone-host-port' ) {
+    test \&start_apache2, "$Eg_home/apache2/fastcgi-standalone-host-port" => "$apache2/$Eg_cfg", sub {
         my $response = shift;
         like $response->header( 'Server' ), qr/^Apache\/2/;
         like $response->decoded_content, qr/CATALYST_ENGINE: FastCGI/;
@@ -127,6 +137,14 @@ elsif ( $run eq 'fastcgi/lighttpd/standalone' ) {
     }
     ;
 }
+elsif ( $run eq 'fastcgi/lighttpd/standalone-host-port' ) {
+    test \&start_lighttpd, "$Eg_home/lighttpd/standalone-host-port" => "$lighttpd/$Eg_cfg", sub {
+        my $response = shift;
+        like $response->header( 'Server' ), qr/^lighttpd/;
+        like $response->decoded_content, qr/CATALYST_ENGINE: FastCGI/;
+    }
+    ;
+}
 elsif ( $run eq 'fastcgi/lighttpd/static' ) {
     test \&start_lighttpd, "$Eg_home/lighttpd/static" => "$lighttpd/$Eg_cfg", sub {
         my $response = shift;
@@ -138,6 +156,14 @@ elsif ( $run eq 'fastcgi/lighttpd/static' ) {
 }
 elsif ( $run eq 'fastcgi/nginx' ) {
     test \&start_nginx, "$Eg_home/nginx/standalone" => "$nginx/$Eg_cfg", sub {
+        my $response = shift;
+        like $response->header( 'Server' ), qr/^nginx/;
+        like $response->decoded_content, qr/CATALYST_ENGINE: FastCGI/;
+    }
+    ;
+}
+elsif ( $run eq 'fastcgi/nginx-host-port' ) {
+    test \&start_nginx, "$Eg_home/nginx/standalone-host-port" => "$nginx/$Eg_cfg", sub {
         my $response = shift;
         like $response->header( 'Server' ), qr/^nginx/;
         like $response->decoded_content, qr/CATALYST_ENGINE: FastCGI/;

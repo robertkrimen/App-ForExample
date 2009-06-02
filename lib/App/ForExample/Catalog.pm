@@ -12,16 +12,14 @@ use warnings;
 
         'common' => {
             'catalyst/apache2/name-alias-log', => <<'_END_',
-    ServerName [% host %]
-    ServerAlias www.[% host %]
+    ServerName [% hostname %]
+    ServerAlias www.[% hostname %]
 
-    CustomLog "|/usr/bin/cronolog /var/log/apache2/[% host %]-%Y-%m.access.log -S /var/log/apache2/[% host %].access.log" combined
-    ErrorLog "|/usr/bin/cronolog /var/log/apache2/[% host %]-%Y-%m.error.log -S /var/log/apache2/[% host %].error.log"
+    CustomLog "|/usr/bin/cronolog /var/log/apache2/[% hostname %]-%Y-%m.access.log -S /var/log/apache2/[% hostname %].access.log" combined
+    ErrorLog "|/usr/bin/cronolog /var/log/apache2/[% hostname %]-%Y-%m.error.log -S /var/log/apache2/[% hostname %].error.log"
 _END_
 
             'catalyst/apache2/fastcgi-rewrite-rule' => <<'_END_',
-    Alias [% alias_base %] [% home %]/script/[% underscore_name %]_fastcgi.pl/
-
     [%- IF base.length -%]
     # Optionally, rewrite the path when accessed without a trailing slash
     RewriteRule ^/[% base %]\$ [% base %]/ [R]
@@ -31,23 +29,30 @@ _END_
         },
 
         'catalyst/fastcgi/apache2/static' => \<<'_END_',
+# vim: set filetype=apache
 <VirtualHost *:80>
 
 [% INCLUDE "catalyst/apache2/name-alias-log" -%]
 
-    FastCgiServer [% home %]/script/[% underscore_name %]_fastcgi.pl -processes 3
+    FastCgiServer [% fastcgi_script %] -processes 3
+
+    Alias [% alias_base %] [% fastcgi_script %]/
+
 [% INCLUDE "catalyst/apache2/fastcgi-rewrite-rule" -%]
 
 </VirtualHost>
 _END_
 
         'catalyst/fastcgi/apache2/standalone' => \<<'_END_',
-# vim: set ft=apache
+# vim: set filetype=apache
 <VirtualHost *:80>
 
 [% INCLUDE "catalyst/apache2/name-alias-log" -%]
 
-    FastCgiExternalServer [% fastcgi_file %] -socket [% fastcgi_socket %]
+    FastCgiExternalServer [% fastcgi_socket_path %] [% fastcgi_host_port ? "-host" : "-socket" %] [% fastcgi_socket %]
+
+    Alias [% alias_base %] [% fastcgi_socket_path %]/
+
 [% INCLUDE "catalyst/apache2/fastcgi-rewrite-rule" -%]
 
      <Directory "[% home %]/root">
@@ -56,6 +61,28 @@ _END_
          Order allow,deny
          Allow from all
      </Directory>
+
+</VirtualHost>
+_END_
+
+        'catalyst/fastcgi/apache2/dynamic' => \<<'_END_',
+# vim: set filetype=apache
+<VirtualHost *:80>
+
+[% INCLUDE "catalyst/apache2/name-alias-log" -%]
+
+    # TODO Need trailing slash?
+    Alias [% alias_base %] [% fastcgi_script %]/
+
+[% INCLUDE "catalyst/apache2/fastcgi-rewrite-rule" -%]
+
+    <Directory "[% home %]/script">
+       Options +ExecCGI
+    </Directory>
+
+    <Files "[% fastcgi_script_basename %]">
+       SetHandler fastcgi-script
+    </Files>
 
 </VirtualHost>
 _END_
@@ -81,12 +108,12 @@ _END_
 # A very basic start-stop script, see also:
 # http://dev.catalystframework.org/wiki/gettingstarted/howtos/deploy/lighttpd_fastcgi
 
-PID_FILE="[% home %]/[% name %]-fastcgi.pid"
+PID_FILE="[% fastcgi_pid_file %]"
 
 case "$1" in
     start)
         echo "Starting"
-        [% home %]/script/[% underscore_name %]_fastcgi.pl -l [% fastcgi_socket %] -n 5 -p $PID_FILE
+        [% fastcgi_script %] -l [% fastcgi_socket %] -n 5 -p $PID_FILE
     ;;
     stop)
         if [ -s "$PID_FILE" ]; then
@@ -109,44 +136,24 @@ esac
 _END_
 
         'catalyst/fastcgi/monit' => \<<'_END_',
-check process [% name %]-fastcgi with pidfile [% home %]/[% name %]-fastcgi.pid
-  start program = "[% home %]/fastcgi start"
-  stop program  = "[% home %]/fastcgi stop"
-_END_
-
-        'catalyst/fastcgi/apache2/dynamic' => \<<'_END_',
-<VirtualHost *:80>
-
-    ServerName [% host %]
-    ServerAlias www.[% host %]
-
-    CustomLog "|/usr/bin/cronolog /var/log/apache2/[% host %]-%Y-%m.access.log -S /var/log/apache2/[% host %].access.log" combined
-    ErrorLog "|/usr/bin/cronolog /var/log/apache2/[% host %]-%Y-%m.error.log -S /var/log/apache2/[% host %].error.log"
-
-    Alias [% alias_base %] [% home %]/script/[% name %]_fastcgi.pl
-
-    # TODO If not /
-    RewriteRule ^/[% base %]\$ [% base %]/ [R]
-
-    <Directory "[% home %]/script">
-       Options +ExecCGI
-    </Directory>
-
-    <Files [% underscore_name %]_fastcgi.pl>
-       SetHandler fastcgi-script
-    </Files>
-
-</VirtualHost>
+check process [% name %]-fastcgi with pidfile [% fastcgi_pid_file %]
+  start program = "[% home %]/fastcgi-start-stop start"
+  stop program  = "[% home %]/fastcgi-start-stop stop"
 _END_
 
         'catalyst/fastcgi/lighttpd/standalone' => \<<'_END_',
 server.modules += ( "mod_fastcgi" )
 
-$HTTP["host"] =~ "^(www.)?[% host %]" {
+$HTTP["host"] =~ "^(www.)?[% hostname %]" {
     fastcgi.server = (
         "" => (
             "[% name %]" => (
+                [% IF fastcgi_host_port %]
+                "host" => "[% fastcgi_host_port.0 %]",
+                "port" => [% fastcgi_host_port.1 %],
+                [% ELSE %]
                 "socket" => "/tmp/[% name %].socket",
+                [% END %]
                 "check-local" => "disable"
             )
         )
@@ -157,13 +164,13 @@ _END_
         'catalyst/fastcgi/lighttpd/static' => \<<'_END_',
 server.modules += ( "mod_fastcgi" )
 
-$HTTP["host"] =~ "^(www.)?[% host %]" {
+$HTTP["host"] =~ "^(www.)?[% hostname %]" {
     fastcgi.server = (
         "" => (
             "[% name%]" => (
-                "socket" => "/tmp/lighttpd-[% name %].socket",
+                "socket" => "[% fastcgi_socket %]",
                 "check-local" => "disable",
-                "bin-path" => "[% home %]/script/[% underscore_name %]_fastcgi.pl",
+                "bin-path" => "[% fastcgi_script %]",
                 "min-procs"    => 2,
                 "max-procs"    => 5,
                 "idle-timeout" => 20
@@ -175,10 +182,14 @@ _END_
 
         'catalyst/fastcgi/nginx' => \<<'_END_',
 server {
-    server_name [% host %];
+    server_name [% hostname %];
     location / {
         include fastcgi_params;
-        fastcgi_pass unix:/tmp/[% name %].socket;
+        [% IF fastcgi_host_port %]
+        fastcgi_pass [% fastcgi_socket %];
+        [% ELSE %]
+        fastcgi_pass unix:[% fastcgi_socket %];
+        [% END %]
     }
 }
 _END_

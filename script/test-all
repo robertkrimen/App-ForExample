@@ -4,11 +4,14 @@
 
 for test in \
     "fastcgi/apache2/standalone" \
+    "fastcgi/apache2/standalone-host-port" \
     "fastcgi/apache2/dynamic" \
     "fastcgi/apache2/static" \
     "fastcgi/lighttpd/standalone" \
+    "fastcgi/lighttpd/standalone-host-port" \
     "fastcgi/lighttpd/static" \
-    "fastcgi/nginx"
+    "fastcgi/nginx" \
+    "fastcgi/nginx-host-port"
 do
     echo "Test: $test"
     ./script/test $test || { echo "*** FAIL $test ***"; exit -1; }

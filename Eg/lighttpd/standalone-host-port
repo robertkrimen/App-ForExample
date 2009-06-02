@@ -5,7 +5,8 @@ $HTTP["host"] =~ "^(www.)?eg.localhost" {
         "" => (
             "eg" => (
                 
-                "socket" => "/tmp/eg.socket",
+                "host" => "127.0.0.1",
+                "port" => 45450,
                 
                 "check-local" => "disable"
             )

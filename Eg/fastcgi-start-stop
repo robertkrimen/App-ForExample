@@ -1,4 +1,6 @@
 #!/bin/bash
+# A very basic start-stop script, see also:
+# http://dev.catalystframework.org/wiki/gettingstarted/howtos/deploy/lighttpd_fastcgi
 
 PID_FILE="/home/rob/develop/App-ForExample/Eg/eg-fastcgi.pid"
 
@@ -16,10 +18,12 @@ case "$1" in
     ;;
     restart)
         $0 stop
+        sleep 2
         $0 start
     ;;
-    *)  
-        echo "Usage: $0 start|stop|restart"
+    *)
+        echo "Don't understand \"$1\ ($*)"
+        echo "Usage: $0 { start | stop | restart }"
         exit -1
     ;;
 esac
