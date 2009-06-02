@@ -15,14 +15,16 @@ Version 0.01
 
 our $VERSION = '0.01';
 
-use App::ForExample::ModuleEmbedCatalog;
+#use App::ForExample::ModuleEmbedCatalog;
+use App::ForExample::Catalog;
 
 use Template;
 use Carp;
 use Path::Class;
 
-my $tt = Template->new;
-my $catalog = App::ForExample::ModuleEmbedCatalog->extract( __PACKAGE__ );
+#my $catalog = App::ForExample::ModuleEmbedCatalog->extract( __PACKAGE__ );
+my $catalog = App::ForExample::Catalog->catalog;
+my $tt = Template->new({ BLOCKS => $catalog->{common} });
 
 sub process ($@) {
     my $given = shift;
@@ -85,8 +87,8 @@ sub parse_catalyst ($) {
     return { @data };
 }
 
-rewrite qr#catalyst/modperl[12]?# => 'catalyst/mod_perl';
-rewrite qr#catalyst/mod_perl[12]# => 'catalyst/mod_perl';
+#rewrite qr#catalyst/modperl[12]?# => 'catalyst/mod_perl';
+rewrite qr#catalyst/(?:mod_perl[12]|modperl[12]?)# => 'catalyst/mod_perl';
 
 on 'catalyst/mod_perl *' => 
     [qw/ package=s name=s home=s base=s host=s /] => sub {
@@ -114,7 +116,7 @@ on 'catalyst/mod_perl *' =>
 };
 
 on 'catalyst/fastcgi *' => 
-    [qw/ package=s name=s home=s base=s host=s /] => sub {
+    [qw/ package=s name=s home=s base=s host=s no-monit no-start-stop /] => sub {
     my $ctx = shift;
     
     my ($server, $server_module, $mode);
@@ -122,6 +124,7 @@ on 'catalyst/fastcgi *' =>
         m/(apache2?)(?:=(?:mod_)?(fastcgi|fcgid))?/ and ($server, $server_module) = ($1, $2) or
         m/lighttpd/ and $server = 'lighttpd' or
         m/nginx/ and $server = 'nginx' or
+        m/start-stop/ and $server = 'nginx' or # Not really a server, but...
 
         m/standalone/ and $mode = 'standalone' or
         m/static/ and $mode = 'static' or
@@ -135,6 +138,8 @@ on 'catalyst/fastcgi *' =>
 
     my @data;
 
+    my $no_monit = $ctx->option( 'no-monit' );
+    my $no_start_stop = $ctx->option( 'no-start-stop' );
     my $catalyst_data = parse_catalyst $ctx;
     push @data, %$catalyst_data;
     my $name = $catalyst_data->{name};
@@ -152,14 +157,14 @@ on 'catalyst/fastcgi *' =>
 
             # TODO Error in Catalyst::Engine::FastCGI dox?
             process 'catalyst/fastcgi/apache2/standalone' => @data;
-
-            print "---\n";
-
-            process 'catalyst/fastcgi/start-stop' => @data;
-
-            print "---\n";
-
-            process 'catalyst/fastcgi/monit' => @data;
+            unless ($no_start_stop) {
+                print "---\n";
+                process 'catalyst/fastcgi/start-stop' => @data;
+            }
+            unless ($no_monit) {
+                print "---\n";
+                process 'catalyst/fastcgi/monit' => @data;
+            }
         }
         elsif ( $mode eq 'dynamic' ) {
             process 'catalyst/fastcgi/apache2/dynamic' => @data;
@@ -175,6 +180,14 @@ on 'catalyst/fastcgi *' =>
 
         if ( $mode eq 'standalone' ) {
             process 'catalyst/fastcgi/lighttpd/standalone' => @data;
+            unless ($no_start_stop) {
+                print "---\n";
+                process 'catalyst/fastcgi/start-stop' => @data;
+            }
+            unless ($no_monit) {
+                print "---\n";
+                process 'catalyst/fastcgi/monit' => @data;
+            }
         }
         elsif ( $mode eq 'static' ) {
             process 'catalyst/fastcgi/lighttpd/static' => @data;
@@ -187,10 +200,24 @@ on 'catalyst/fastcgi *' =>
 
         if ( $mode eq 'standalone' ) {
             process 'catalyst/fastcgi/nginx' => @data;
+            unless ($no_start_stop) {
+                print "---\n";
+                process 'catalyst/fastcgi/start-stop' => @data;
+            }
+            unless ($no_monit) {
+                print "---\n";
+                process 'catalyst/fastcgi/monit' => @data;
+            }
         }
         else {
             croak "Don't understand mode \"$mode\""
         }
+    }
+    elsif ( $server eq 'start-stop' ) {
+        process 'catalyst/fastcgi/start-stop' => @data;
+    }
+    elsif ( $server eq 'monit' ) {
+        process 'catalyst/fastcgi/monit' => @data;
     }
     else {
         croak "Don't understand server \"$server\""
@@ -212,6 +239,46 @@ on 'monit' =>
     process 'monit' => ( home => $home );
 };
 
+on 'help' => 
+    undef, sub {
+
+    print <<_END_;
+Usage: for-example EXAMPLE
+
+    catalyst/fastcgi <web-server> <fastcgi-method>
+
+        --package           The Catalyst package for your application (e.g. Project::Xyzzy or My::Application)
+        --home              The path to your Catalyst home directory, default:  . (The current directory)
+        --base              The base for your application, default:             / (At the root)
+        --host              The hostname for your application (e.g. example.com)
+        --no-monit          Do not print out a monit configuration, if applicable
+        --no-start-stop     Do not print out a start/stop script, if applicable
+
+        apache2 standalone  Apache2 with standalone FastCGI 
+        apache2 static      Apache2 with static FastCGI
+        apache2 dynamic     Apache2 with dynamic FastCGI
+
+        lighttpd standalone lighttpd with dynamic FastCGI
+        lighttpd static     lighttpd with static FastCGI
+
+        nginx               nginx with standalone FastCGI (the only kind supported)
+        
+
+    catalyst/mod_perl
+
+        See the above section on 'catalyst/fastcgi' for an option synopsis
+
+        This will generate a mod_perl2 (for Apache2) Catalyst configuration
+
+    monit
+
+        --home          The directory containing my-monit (<home>/my-monit)
+        --monit-home    Put everything in <monit-home>, --home will be ignored
+
+        Generate a basic, stripped down monit configuration suitable for a non-root user
+_END_
+};
+
 on qr/.*/ => undef, sub {
     my $ctx = shift;
 
@@ -220,11 +287,14 @@ Usage: for-example EXAMPLE
 
 Where EXAMPLE is one of:
 
-    catalyst/fastcgi apache2 standalone|dynamic
+    catalyst/fastcgi apache2 standalone|static|dynamic
     catalyst/fastcgi lighttpd standalone|static
     catalyst/fastcgi nginx
-    catalyst/mod_perl apache2
+    catalyst/fastcgi start-stop|monit
+    catalyst/mod_perl
     monit
+
+    help
 
 _END_
 };
