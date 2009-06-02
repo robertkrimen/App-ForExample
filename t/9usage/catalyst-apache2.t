@@ -18,19 +18,20 @@ stdout_is( sub { run qw#catalyst/fastcgi apache2 standalone# }, <<'_END_' );
 # vim: set ft=apache
 <VirtualHost *:80>
 
-    ServerName xyzzy
-    ServerAlias www.xyzzy
+    ServerName project-xyzzy.example.com
+    ServerAlias www.project-xyzzy.example.com
 
-    CustomLog "|/usr/sbin/cronolog /var/log/apache2/xyzzy-%Y-%m.access.log -S /var/log/apache2/xyzzy.access.log" combined
-    ErrorLog "|/usr/sbin/cronolog /var/log/apache2/xyzzy-%Y-%m.error.log -S /var/log/apache2/xyzzy.error.log"
+    CustomLog "|/usr/bin/cronolog /var/log/apache2/project-xyzzy.example.com-%Y-%m.access.log -S /var/log/apache2/project-xyzzy.example.com.access.log" combined
+    ErrorLog "|/usr/bin/cronolog /var/log/apache2/project-xyzzy.example.com-%Y-%m.error.log -S /var/log/apache2/project-xyzzy.example.com.error.log"
 
-    FastCgiExternalServer /tmp/xyzzy.fcgi -socket /tmp/xyzzy.socket
-    Alias / /tmp/xyzzy.fcgi/
+    FastCgiExternalServer /tmp/project-xyzzy.fcgi -socket /tmp/project-xyzzy.socket
+    Alias  /tmp/project-xyzzy.fcgi/
 
     # Optionally, rewrite the path when accessed without a trailing slash
+    # TODO If not /
     RewriteRule ^/\$ / [R]
 
-     <Directory "./xyzzy/root">
+     <Directory "/home/rob/develop/App-ForExample/root">
          Options Indexes FollowSymLinks
          AllowOverride All
          Order allow,deny
@@ -38,9 +39,37 @@ stdout_is( sub { run qw#catalyst/fastcgi apache2 standalone# }, <<'_END_' );
      </Directory>
 
 </VirtualHost>
+---
+#!/bin/bash
 
-# Start your fastcgi socket with the following command:
-# script/xyzzy_fastcgi.pl -l /tmp/xyzzy.socket -n 5
+PID_FILE="/home/rob/develop/App-ForExample/project-xyzzy-fastcgi.pid"
+
+case "$1" in
+    start)
+        echo "Starting"
+        /home/rob/develop/App-ForExample/script/project_xyzzy_fastcgi.pl -l /tmp/project-xyzzy.socket -n 5 -p $PID_FILE
+    ;;
+    stop)
+        if [ -s "$PID_FILE" ]; then
+            echo "Stopping"
+            PID=`cat "$PID_FILE"`
+            kill -TERM $PID
+        fi
+    ;;
+    restart)
+        $0 stop
+        $0 start
+    ;;
+    *)
+        echo "Don't understand \"$1\ ($*)"
+        echo "Usage: $0 start|stop|restart"
+        exit -1
+    ;;
+esac
+---
+check process project-xyzzy-fastcgi with pidfile /home/rob/develop/App-ForExample/project-xyzzy-fastcgi.pid
+  start program = "/home/rob/develop/App-ForExample/fastcgi start"
+  stop program  = "/home/rob/develop/App-ForExample/fastcgi stop"
 _END_
 
 1;

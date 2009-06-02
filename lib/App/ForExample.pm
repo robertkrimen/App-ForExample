@@ -35,7 +35,6 @@ sub process ($@) {
         $template = $catalog->{$given} or croak "Template \"$given\" does not exist in the catalog";
     }
 
-    print "---\n";
     $tt->process( $template => { @_ } ) or croak "Error processing template \"$given\": ", $tt->error; 
 }
 
@@ -43,9 +42,50 @@ use Getopt::Chain::Declare;
 
 sub package2name ($) {
     my $package = shift;
-    $package =~ s/::/_/g;
-    $package = lc $package;
+    my $name = $package;
+    $name =~ s/::/-/g;
+    $name = lc $name;
+    my $underscore_name = $name;
+    $underscore_name =~ s/-/_/g;
+    return ( $name, $underscore_name );
 }
+
+sub parse_catalyst ($) {
+    my $ctx = shift;
+
+    # Catalyst package
+    my $package = $ctx->option( 'package' ) || 'Project::Xyzzy';
+    my ($package_name, $underscore_name) = package2name $package;
+
+    # Catalyst name
+    my $name = $ctx->option( 'name' );
+    $name = $package_name unless defined $name;
+
+    # Catalyst home
+    my $home = $ctx->option( 'home' ) || "./";
+    $home = dir( $home )->absolute;
+
+    # Catalyst application base
+    my $base = $ctx->option( 'base' ) || '/';
+    $base =~ s/^\/+//;
+    my $alias_base = $base eq '' ? '/' : "/$base/";
+
+    # Virtual host
+    my $host = $ctx->option( 'host' ) || "$name.example.com";
+
+    my @data;
+    push @data, package => $package,
+        name => $name,
+        underscore_name => $underscore_name,
+        home => $home,
+        base => $base,
+        host => $host
+    ;
+    return { @data };
+}
+
+rewrite qr#catalyst/modperl[12]?# => 'catalyst/mod_perl';
+rewrite qr#catalyst/mod_perl[12]# => 'catalyst/mod_perl';
 
 on 'catalyst/mod_perl *' => 
     [qw/ package=s name=s home=s base=s host=s /] => sub {
@@ -59,38 +99,12 @@ on 'catalyst/mod_perl *' =>
     }
     ($server) = qw/apache2/;
 
-    # Catalyst package
-    my $package = $ctx->option( 'package' ) || 'Project::Xyzzy';
-    my $package_name = package2name $package;
-
-    # Catalyst name
-    my $name = $ctx->option( 'name' );
-    $name = $package_name unless defined $name;
-
-    # Catalyst home
-    my $home = $ctx->option( 'home' ) || "./";
-    $home = dir( $home )->absolute;
-
-    # Catalyst application base
-    my $base = $ctx->option( 'base' ) || '/';
-    $base =~ s/^\/+//;
-
-    # Virtual host
-    my $host = $ctx->option( 'host' ) || "$name.example.com";
-
-    my %process = (
-        name => $name,
-        home => $home,
-        base => $base,
-        host => $host,
-    );
+    my @data;
+    my $catalyst_data = parse_catalyst $ctx;
+    push @data, %$catalyst_data;
 
     if ( $server =~ m/^apache2?$/ ) {
-
-        process 'catalyst/mod_perl/apache2' =>
-            %process,
-        ;
-
+        process 'catalyst/mod_perl/apache2' => @data;
     }
     else {
         croak "Don't understand server \"$server\""
@@ -120,35 +134,9 @@ on 'catalyst/fastcgi *' =>
 
     my @data;
 
-    # Catalyst package
-    my $package = $ctx->option( 'package' ) || 'Project::Xyzzy';
-    my $package_name = package2name $package;
-
-    # Catalyst name
-    my $name = $ctx->option( 'name' );
-    $name = $package_name unless defined $name;
-
-
-    # Catalyst home
-    my $home = $ctx->option( 'home' ) || "./";
-    $home = dir( $home )->absolute;
-
-    # Catalyst application base
-    my $base = $ctx->option( 'base' ) || '/';
-    $base =~ s/^\/+//;
-    my $alias_base = $base eq '' ? '/' : "/$base/";
-
-    # Virtual host
-    my $host = $ctx->option( 'host' ) || "$name.example.com";
-
-    push @data,
-        package => $package,
-        name => $name,
-        home => $home,
-        base => $base,
-        alias_base => $alias_base,
-        host => $host,
-    ;
+    my $catalyst_data = parse_catalyst $ctx;
+    push @data, %$catalyst_data;
+    my $name = $catalyst_data->{name};
 
     if ( $server =~ m/^apache2?$/ ) {
 
@@ -165,17 +153,23 @@ on 'catalyst/fastcgi *' =>
             # TODO Error in Catalyst::Engine::FastCGI dox?
             process 'catalyst/fastcgi/apache2/standalone' => @data;
 
+            print "---\n";
+
             process 'catalyst/fastcgi/start-stop' => @data;
+
+            print "---\n";
 
             process 'catalyst/fastcgi/monit' => @data;
         }
         elsif ( $mode eq 'dynamic' ) {
-
-            process 'catalyst/fastcgi/apache2/dynamic' => @_;
+            process 'catalyst/fastcgi/apache2/dynamic' => @data;
         }
         else {
             croak "Don't understand mode \"$mode\""
         }
+    }
+    elsif ( $server =~ m/^lighttpd$/ ) {
+        process 'catalyst/fastcgi/lighttpd/standalone' => @data;
     }
     else {
         croak "Don't understand server \"$server\""
@@ -207,6 +201,7 @@ Where EXAMPLE is one of:
 
     catalyst/fastcgi apache2 standalone|dynamic
     catalyst/mod_perl apache2
+    monit
 
 _END_
 };
@@ -308,7 +303,7 @@ PID_FILE="[% home %]/[% name %]-fastcgi.pid"
 case "$1" in
     start)
         echo "Starting"
-        [% home %]/script/[% name %]_fastcgi.pl -l [% fastcgi_socket %] -n 5 -p $PID_FILE
+        [% home %]/script/[% underscore_name %]_fastcgi.pl -l [% fastcgi_socket %] -n 5 -p $PID_FILE
     ;;
     stop)
         if [ -s "$PID_FILE" ]; then
@@ -353,7 +348,7 @@ catalyst/fastcgi/apache2/dynamic
        Options +ExecCGI
     </Directory>
 
-    <Files [% name %]_fastcgi.pl>
+    <Files [% underscore_name %]_fastcgi.pl>
        SetHandler fastcgi-script
     </Files>
 
@@ -380,13 +375,28 @@ PerlModule [% package %]
 </VirtualHost>
 __ASSET__
 
+catalyst/fastcgi/lighttpd/standalone
+server.modules += ( "mod_fastcgi" )
+
+$HTTP["host"] =~ "^(www.)?[% host %]" {
+    fastcgi.server = (
+        "" => (
+            "[% name %]" => (
+                "socket" => "/tmp/[% name %].socket",
+                "check-local" => "disable"
+            )
+        )
+    )
+}
+__ASSET__
+
 monit
 # Monit control file
 
 set daemon 120
-set logfile [% home %]/monit.log
-set pidfile [% home %]/monit.pid
-set statefile [% home %]/monit.state
+set logfile [% home %]/log
+set pidfile [% home %]/pid
+set statefile [% home %]/state
 
 set httpd port 2822 and # This port needs to be unique on a system
     use address localhost

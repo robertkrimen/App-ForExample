@@ -18,9 +18,9 @@ stdout_is( sub { run qw#monit --monit-home /monit# }, <<'_END_' );
 # Monit control file
 
 set daemon 120
-set logfile /monit/monit.log
-set pidfile /monit/monit.pid
-set statefile /monit/monit.state
+set logfile /monit/log
+set pidfile /monit/pid
+set statefile /monit/state
 
 set httpd port 2822 and # This port needs to be unique on a system
     use address localhost
