@@ -1,0 +1,13 @@
+#!/bin/sh
+
+#fastcgi/apache2/static
+
+for test in \
+    "fastcgi/apache2/standalone" \
+    "fastcgi/apache2/dynamic" \
+    "fastcgi/lighttpd/standalone" \
+    "fastcgi/lighttpd/static"
+do
+    echo "Test: $test"
+    ./script/test $test || { echo "*** FAIL $test ***"; exit -1; }
+done
