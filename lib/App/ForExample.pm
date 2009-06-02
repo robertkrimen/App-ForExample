@@ -141,7 +141,6 @@ on 'catalyst/fastcgi *' =>
     if ( $server =~ m/^apache2?$/ ) {
 
         if ( $mode eq 'standalone' ) {
-
             # Or fastcgi_host
             my $fastcgi_socket = "/tmp/$name.socket";
             my $fastcgi_file = "/tmp/$name.fcgi";
@@ -168,7 +167,7 @@ on 'catalyst/fastcgi *' =>
             croak "Don't understand mode \"$mode\""
         }
     }
-    elsif ( $server =~ m/^lighttpd$/ ) {
+    elsif ( $server eq 'lighttpd' ) {
 
         if ( $mode eq 'standalone' ) {
             process 'catalyst/fastcgi/lighttpd/standalone' => @data;
@@ -179,7 +178,15 @@ on 'catalyst/fastcgi *' =>
         else {
             croak "Don't understand mode \"$mode\""
         }
-        
+    }
+    elsif ( $server eq 'nginx' ) {
+
+        if ( $mode eq 'standalone' ) {
+            process 'catalyst/fastcgi/nginx' => @data;
+        }
+        else {
+            croak "Don't understand mode \"$mode\""
+        }
     }
     else {
         croak "Don't understand server \"$server\""
@@ -210,6 +217,8 @@ Usage: for-example EXAMPLE
 Where EXAMPLE is one of:
 
     catalyst/fastcgi apache2 standalone|dynamic
+    catalyst/fastcgi lighttpd standalone|static
+    catalyst/fastcgi nginx
     catalyst/mod_perl apache2
     monit
 
@@ -416,6 +425,16 @@ $HTTP["host"] =~ "^(www.)?[% host %]" {
             )
         )
     )
+}
+__ASSET__
+
+catalyst/fastcgi/nginx
+server {
+    server_name [% host %];
+    location / {
+        include fastcgi_params;
+        fastcgi_pass unix:/tmp/[% name %].socket;
+    }
 }
 __ASSET__
 

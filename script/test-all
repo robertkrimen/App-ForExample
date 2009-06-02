@@ -6,7 +6,8 @@ for test in \
     "fastcgi/apache2/standalone" \
     "fastcgi/apache2/dynamic" \
     "fastcgi/lighttpd/standalone" \
-    "fastcgi/lighttpd/static"
+    "fastcgi/lighttpd/static" \
+    "fastcgi/nginx"
 do
     echo "Test: $test"
     ./script/test $test || { echo "*** FAIL $test ***"; exit -1; }

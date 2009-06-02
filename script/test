@@ -28,6 +28,7 @@ sub start_nginx () {
 
 my $apache2 = '/etc/apache2/sites-enabled';
 my $lighttpd = '/etc/lighttpd/conf-enabled';
+my $nginx = '/etc/nginx/sites-enabled';
 
 my $Eg_home = '/home/rob/develop/App-ForExample/Eg';
 my $Eg_cfg = 'Eg.conf';
@@ -97,7 +98,7 @@ sub like ($$) {
 if ( $run eq 'fastcgi/apache2/standalone' ) {
     test \&start_apache2, "$Eg_home/apache2/fastcgi-standalone" => "$apache2/$Eg_cfg", sub {
         my $response = shift;
-        like $response->header( 'Server' ), qr/Apache\/2/;
+        like $response->header( 'Server' ), qr/^Apache\/2/;
         like $response->decoded_content, qr/CATALYST_ENGINE: FastCGI/;
     }
     ;
@@ -105,7 +106,7 @@ if ( $run eq 'fastcgi/apache2/standalone' ) {
 elsif ( $run eq 'fastcgi/apache2/dynamic' ) {
     test \&start_apache2, "$Eg_home/apache2/fastcgi-dynamic" => "$apache2/$Eg_cfg", sub {
         my $response = shift;
-        like $response->header( 'Server' ), qr/Apache\/2/;
+        like $response->header( 'Server' ), qr/^Apache\/2/;
         like $response->decoded_content, qr/CATALYST_ENGINE: FastCGI/;
     }
     ;
@@ -113,7 +114,7 @@ elsif ( $run eq 'fastcgi/apache2/dynamic' ) {
 elsif ( $run eq 'fastcgi/lighttpd/standalone' ) {
     test \&start_lighttpd, "$Eg_home/lighttpd/standalone" => "$lighttpd/$Eg_cfg", sub {
         my $response = shift;
-        like $response->header( 'Server' ), qr/lighttpd/;
+        like $response->header( 'Server' ), qr/^lighttpd/;
         like $response->decoded_content, qr/CATALYST_ENGINE: FastCGI/;
     }
     ;
@@ -121,9 +122,17 @@ elsif ( $run eq 'fastcgi/lighttpd/standalone' ) {
 elsif ( $run eq 'fastcgi/lighttpd/static' ) {
     test \&start_lighttpd, "$Eg_home/lighttpd/static" => "$lighttpd/$Eg_cfg", sub {
         my $response = shift;
-        like $response->header( 'Server' ), qr/lighttpd/;
+        like $response->header( 'Server' ), qr/^lighttpd/;
         like $response->decoded_content, qr/CATALYST_ENGINE: FastCGI/;
         like $response->decoded_content, qr/PHP_FCGI_CHILDREN: 1/;
+    }
+    ;
+}
+elsif ( $run eq 'fastcgi/nginx' ) {
+    test \&start_nginx, "$Eg_home/nginx/standalone" => "$nginx/$Eg_cfg", sub {
+        my $response = shift;
+        like $response->header( 'Server' ), qr/^nginx/;
+        like $response->decoded_content, qr/CATALYST_ENGINE: FastCGI/;
     }
     ;
 }
