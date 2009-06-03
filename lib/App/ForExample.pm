@@ -5,7 +5,7 @@ use strict;
 
 =head1 NAME
 
-App::ForExample - A guide through Catalyst, Apache, lighttpd, nginx, monit, ... configuration hell
+App::ForExample - A guide through Catalyst, Apache, lighttpd, nginx, monit, ..., configuration hell
 
 =head1 VERSION
 
@@ -28,32 +28,38 @@ our $VERSION = '0.01';
 App::ForExample is a command-line tool for generating sample configurations. It is NOT designed to do configuration
 management, but a guide to get you 80% of the way "there"
 
-This tool came into being because I was tired of forgetting how to configure Apache2/Catalyst/FastCGI and then having to pull
-up a web browser to hunt and search for examples.
+This tool came into being because I was tired of forgetting the configuration syntax for Apache2/lighttpd/Catalyst/FastCGI and having to pull
+up a web browser to hunt and search for examples
 
 Besides the usual Apache2, lighttpd, nginx, and FastCGI, configurations, App::ForExample can create a FastCGI start-stop script and a
-monit configuration for monitoring those processes.
+monit configuration for monitoring those processes
 
 =head1 USAGE
 
-    Usage: for-example ...
+    Usage: for-example ACTION
 
-    Where ... can be:
+    Where ACTION can be
 
-        catalyst/fastcgi <http-daemon> <fastcgi-method>
+    (Note: Every option below is, well, optional. If not specified, a fun default will be chosen/guessed for you)
 
-            Generate a Catalyst FastCGI configuration (for the specified http-daemon and fastcgi-method)
+        catalyst/fastcgi ...
+
+            Generate a Catalyst FastCGI configuration (for monit, start-stop, or the specified http daemon and fastcgi method)
 
             --package           The Catalyst package for your application (e.g. Project::Xyzzy or My::Application)
             --home              The path to your Catalyst home directory, default: . (The current directory)
+            --log-home          The directory to log into, default: <home>/log (Below the directory given by --home)
             --base              The base for your application, default: / (At the root)
-            --hostname          The hostname for your application (e.g. example.com)
+            --hostname          The hostname from which your application is served (e.g. example.com)
+
             --no-monit          Do not print out a monit configuration, if applicable
             --no-start-stop     Do not print out a start/stop script, if applicable
+            --no-bundle         Do not print out anything BUT the configuration (no monit, no start-stop)
 
-            apache2 standalone  Apache2 with standalone FastCGI 
-            apache2 static      Apache2 with static FastCGI
-            apache2 dynamic     Apache2 with dynamic FastCGI
+            apache2 standalone  Apache2 with standalone FastCGI (mod_fastcgi)
+            apache2 static      Apache2 with static FastCGI (mod_fastcgi)
+            apache2 dynamic     Apache2 with dynamic FastCGI (mod_fastcgi)
+
 
             lighttpd standalone lighttpd with dynamic FastCGI
             lighttpd static     lighttpd with static FastCGI
@@ -69,13 +75,15 @@ monit configuration for monitoring those processes.
 
             --package           The Catalyst package for your application (e.g. Project::Xyzzy or My::Application)
             --home              The path to your Catalyst home directory, default: . (The current directory)
+            --log-home          The directory to log into, default: <home>/log (Below the directory given by --home)
             --base              The base for your application, default: / (At the root)
+            --hostname          The hostname from which your application is served (e.g. example.com)
 
         monit
 
             Generate a basic, stripped-down monit configuration suitable for a non-root user
 
-            --home          The directory designated monit home (containing the pid file, log, rc, ...)
+            --home              The directory designated monit home (containing the pid file, log, rc, ...)
 
 =head1 INSTALL
 
@@ -191,9 +199,11 @@ sub do_help ($) {
     my $ctx = shift;
 
     print <<_END_;
-Usage: for-example ...
+Usage: for-example ACTION
 
-Where ... can be:
+Where ACTION can be
+
+(Note: Every option below is, well, optional. If not specified, a fun default will be chosen/guessed for you)
 
     catalyst/fastcgi ...
 
@@ -209,9 +219,9 @@ Where ... can be:
         --no-start-stop     Do not print out a start/stop script, if applicable
         --no-bundle         Do not print out anything BUT the configuration (no monit, no start-stop)
 
-        apache2 standalone  Apache2 with standalone FastCGI 
-        apache2 static      Apache2 with static FastCGI
-        apache2 dynamic     Apache2 with dynamic FastCGI
+        apache2 standalone  Apache2 with standalone FastCGI (mod_fastcgi)
+        apache2 static      Apache2 with static FastCGI (mod_fastcgi)
+        apache2 dynamic     Apache2 with dynamic FastCGI (mod_fastcgi)
 
         lighttpd standalone lighttpd with dynamic FastCGI
         lighttpd static     lighttpd with static FastCGI
@@ -227,13 +237,15 @@ Where ... can be:
 
         --package           The Catalyst package for your application (e.g. Project::Xyzzy or My::Application)
         --home              The path to your Catalyst home directory, default: . (The current directory)
+        --log-home          The directory to log into, default: <home>/log (Below the directory given by --home)
         --base              The base for your application, default: / (At the root)
+        --hostname          The hostname from which your application is served (e.g. example.com)
 
     monit
 
         Generate a basic, stripped-down monit configuration suitable for a non-root user
 
-        --home          The directory designated monit home (containing the pid file, log, rc, ...)
+        --home              The directory designated monit home (containing the pid file, log, rc, ...)
 
 For example:
 
@@ -440,7 +452,7 @@ L<Catalyst::Engine::FastCGI>
 
 All the people that have put effort into the Catalyst documentation, including the pod, advent, and wiki
 
-Dan Dascalescu, Tomas Doran, Daniel Austin, Jason Felds, Moritz Onken, and Brian Friday, who all put effort into the deployment wiki, which
+Dan Dascalescu, Jay Shirley, Tomas Doran, Daniel Austin, Jason Felds, Moritz Onken, and Brian Friday, who all put effort into the deployment wiki, which
 formed the basis for many parts of this tool
 
 =head1 AUTHOR
