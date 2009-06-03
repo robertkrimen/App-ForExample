@@ -1,0 +1,3 @@
+#!/bin/sh
+
+monit -c /home/rob/develop/App-ForExample/_monit/monitrc $*

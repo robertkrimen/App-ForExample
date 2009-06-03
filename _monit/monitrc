@@ -1,9 +1,9 @@
 # Monit control file
 
 set daemon 120
-set logfile /home/rob/develop/App-ForExample/my-monit/log
-set pidfile /home/rob/develop/App-ForExample/my-monit/pid
-set statefile /home/rob/develop/App-ForExample/my-monit/state
+set logfile /home/rob/develop/App-ForExample/_monit/log
+set pidfile /home/rob/develop/App-ForExample/_monit/pid
+set statefile /home/rob/develop/App-ForExample/_monit/state
 
 set httpd port 2822 # This port needs to be unique on a system
      use address localhost
@@ -16,14 +16,3 @@ check process eg-fastcgi with pidfile /home/rob/develop/App-ForExample/Eg/eg-fas
 check process eg-fastcgi-host-port with pidfile /home/rob/develop/App-ForExample/Eg/eg-fastcgi-host-port.pid
   start program = "/home/rob/develop/App-ForExample/Eg/fastcgi-start-stop-host-port start"
   stop program  = "/home/rob/develop/App-ForExample/Eg/fastcgi-start-stop-host-port stop"
-
-# Put this file in /home/rob/develop/App-ForExample/my-monit/monitrc
-# Use this alias to control your monit daemon:
-#
-# alias 'my-monit'='monit -vc /home/rob/develop/App-ForExample/my-monit/monitrc'
-#
-#   my-monit
-#   my-monit start all
-#   my-monit quit
-#   ...
-#

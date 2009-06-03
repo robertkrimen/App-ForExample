@@ -31,6 +31,7 @@ my $lighttpd = '/etc/lighttpd/conf-enabled';
 my $nginx = '/etc/nginx/sites-enabled';
 
 my $Eg_home = '/home/rob/develop/App-ForExample/Eg';
+   $Eg_home = '/home/rob/develop/App-ForExample/t/assets';
 my $Eg_cfg = 'Eg.conf';
 my $url = 'http://eg.localhost';
 my $agent = LWP::UserAgent->new;

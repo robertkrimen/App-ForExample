@@ -1,4 +1,6 @@
 Eg/*.log
+Eg/*.pid
+_monit
 Makefile
 my-monit/log
 inc
