@@ -5,7 +5,7 @@ use strict;
 
 =head1 NAME
 
-App::ForExample - A guide through configuration hell
+App::ForExample - A guide through Catalyst, Apache, lighttpd, nginx, monit, ..., configuration hell
 
 =head1 VERSION
 
@@ -13,7 +13,85 @@ Version 0.01
 
 =cut
 
+# TODO Logging in nginx, lighttpd
+
 our $VERSION = '0.01';
+
+=head1 SYNOPSIS
+
+    for-example catalyst/fastcgi apache2 standalone --package My::Application --hostname example.com
+
+    for-example monit --home $HOME/my-monit
+
+    for-example catalyst/mod_perl --package Project::Xyzzy --hostname xyzzy.com --home Project-Xyzzy
+
+=head1 DESCRIPTION
+
+App::ForExample is a command-line tool for generating sample configurations. It is NOT designed to do configuration
+management, but a guide to get you 80% of the way "there"
+
+This tool came into being because I was tired of forgetting how to configure Apache2/Catalyst/FastCGI and then having to pull
+up a web browser to hunt and search for examples.
+
+Besides the usual Apache2, lighttpd, nginx, and FastCGI, configurations, App::ForExample can create a FastCGI start-stop script and a
+monit configuration for monitoring those processes.
+
+=head1 USAGE
+
+    Usage: for-example ...
+
+    Where ... can be:
+
+        catalyst/fastcgi <http-daemon> <fastcgi-method>
+
+            Generate a Catalyst FastCGI configuration (for the specified http-daemon and fastcgi-method)
+
+            --package           The Catalyst package for your application (e.g. Project::Xyzzy or My::Application)
+            --home              The path to your Catalyst home directory, default: . (The current directory)
+            --base              The base for your application, default: / (At the root)
+            --hostname          The hostname for your application (e.g. example.com)
+            --no-monit          Do not print out a monit configuration, if applicable
+            --no-start-stop     Do not print out a start/stop script, if applicable
+
+            apache2 standalone  Apache2 with standalone FastCGI 
+            apache2 static      Apache2 with static FastCGI
+            apache2 dynamic     Apache2 with dynamic FastCGI
+
+            lighttpd standalone lighttpd with dynamic FastCGI
+            lighttpd static     lighttpd with static FastCGI
+
+            nginx               nginx with standalone FastCGI (the only kind supported)
+
+            monit               A monit configuration for a standalone FastCGI setup
+            start-stop          A start-stop script for a standalone FastCGI setup
+            
+        catalyst/mod_perl
+
+            Generate a mod_perl2 (for Apache2) Catalyst configuration
+
+            --package           The Catalyst package for your application (e.g. Project::Xyzzy or My::Application)
+            --home              The path to your Catalyst home directory, default: . (The current directory)
+            --base              The base for your application, default: / (At the root)
+
+        monit
+
+            Generate a basic, stripped-down monit configuration suitable for a non-root user
+
+            --home          The directory designated monit home (containing the pid file, log, rc, ...)
+
+=head1 INSTALL
+
+You can install L<App::ForExample> by using L<CPAN>:
+
+    cpan -i App::ForExample
+
+If that doesn't work properly, you can find help at:
+
+    L<http://sial.org/howto/perl/life-with-cpan/>
+    L<http://sial.org/howto/perl/life-with-cpan/macosx/> # Help on Mac OS X
+    L<http://sial.org/howto/perl/life-with-cpan/non-root/> # Help with a non-root account
+
+=cut
 
 use App::ForExample::Catalog;
 
@@ -142,19 +220,20 @@ Where ... can be:
 
         Generate a mod_perl2 (for Apache2) Catalyst configuration
 
-        See the above section on 'catalyst/fastcgi' for an option synopsis
+        --package           The Catalyst package for your application (e.g. Project::Xyzzy or My::Application)
+        --home              The path to your Catalyst home directory, default: . (The current directory)
+        --base              The base for your application, default: / (At the root)
 
     monit
 
         Generate a basic, stripped-down monit configuration suitable for a non-root user
 
-        --home          The directory containing my-monit (<home>/my-monit)
-        --monit-home    Put everything in <monit-home>, --home will be ignored
+        --home          The directory designated monit home (containing the pid file, log, rc, ...)
 
 For example:
 
     for-example catalyst/fastcgi apache2 standalone --package My::Application --hostname example.com
-    for-example monit --monit-home \$HOME/my-monit
+    for-example monit --home \$HOME/my-monit
     for-example catalyst/mod_perl --package Project::Xyzzy --hostname xyzzy.com --home Project-Xyzzy
 
 _END_
@@ -169,7 +248,6 @@ start [qw/ help|h /], sub {
     }
 };
 
-#rewrite qr#catalyst/modperl[12]?# => 'catalyst/mod_perl';
 rewrite qr#catalyst/(?:mod_perl[12]|modperl[12]?)# => 'catalyst/mod_perl';
 
 on 'catalyst/mod_perl *' => 
@@ -306,9 +384,8 @@ on 'monit' =>
     my $ctx = shift;
 
     my @home;
-    unless ($home[0] = $ctx->option( 'monit-home' )) {
-        $home[0] = $ctx->option( 'home' ) || "./";
-        push @home, qw/my-monit/;
+    unless ($home[0] = $ctx->option( 'home' )) {
+        @home = qw/ . my-monit /;
     }
     my $home = dir @home;
     $home = $home->absolute;
@@ -345,6 +422,21 @@ _END_
 };
 
 no Getopt::Chain::Declare;
+
+=head1 SEE ALSO
+
+L<http://dev.catalystframework.org/wiki/deployment>
+
+L<Catalyst::Engine::Apache>
+
+L<Catalyst::Engine::FastCGI>
+
+=head1 ACKNOWLEDGEMENTS
+
+All the people that have put effort into the Catalyst documentation, including the pod, advent, and wiki
+
+Dan Dascalescu, Tomas Doran, Daniel Austin, Jason Felds, Moritz Onken, and Brian Friday, who all put effort into the deployment wiki, which
+formed the basis for many parts of this tool
 
 =head1 AUTHOR
 

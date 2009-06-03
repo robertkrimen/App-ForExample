@@ -95,7 +95,7 @@ PerlModule [% package %]
 
 [% INCLUDE "catalyst/apache2/name-alias-log" -%]
 
-    <Location />
+    <Location "[% base %]">
         SetHandler          modperl
         PerlResponseHandler [% package %]
     </Location>
@@ -140,7 +140,7 @@ case "$1" in
 
     ;;
     stop)
-        echo -n "Stopping $APP_NAME ($APP_PACKAGE) in $APP_HOME... "
+        echo -n "Stopping $APP_NAME ($APP_PACKAGE)... "
 
         if [ -s "$APP_PID_FILE" ]; then
             PID=`cat "$APP_PID_FILE"`
@@ -185,7 +185,7 @@ server.modules += ( "mod_fastcgi" )
 
 $HTTP["host"] =~ "^(www.)?[% hostname %]" {
     fastcgi.server = (
-        "" => (
+        "[% base %]" => (
             "[% name %]" => (
                 [% IF fastcgi_host_port %]
                 "host" => "[% fastcgi_host_port.0 %]",
@@ -205,7 +205,7 @@ server.modules += ( "mod_fastcgi" )
 
 $HTTP["host"] =~ "^(www.)?[% hostname %]" {
     fastcgi.server = (
-        "" => (
+        "[% base %]" => (
             "[% name%]" => (
                 "socket" => "[% fastcgi_socket %]",
                 "check-local" => "disable",
@@ -222,7 +222,7 @@ _END_
         'catalyst/fastcgi/nginx' => \<<'_END_',
 server {
     server_name [% hostname %];
-    location / {
+    location [% alias_base %] {
         include fastcgi_params;
         [% IF fastcgi_host_port %]
         fastcgi_pass [% fastcgi_socket %];

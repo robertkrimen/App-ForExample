@@ -9,7 +9,7 @@ PerlModule Eg
     CustomLog "|/usr/bin/cronolog /var/log/apache2/eg.localhost-%Y-%m.access.log -S /var/log/apache2/eg.localhost.access.log" combined
     ErrorLog "|/usr/bin/cronolog /var/log/apache2/eg.localhost-%Y-%m.error.log -S /var/log/apache2/eg.localhost.error.log"
 
-    <Location />
+    <Location "">
         SetHandler          modperl
         PerlResponseHandler Eg
     </Location>

@@ -34,7 +34,7 @@ case "$1" in
 
     ;;
     stop)
-        echo -n "Stopping $APP_NAME ($APP_PACKAGE) in $APP_HOME... "
+        echo -n "Stopping $APP_NAME ($APP_PACKAGE)... "
 
         if [ -s "$APP_PID_FILE" ]; then
             PID=`cat "$APP_PID_FILE"`
