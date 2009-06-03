@@ -237,6 +237,7 @@ _END_
 # Monit control file
 
 set daemon 120
+#set alert alice@example.com
 set logfile [% home %]/log
 set pidfile [% home %]/pid
 set statefile [% home %]/state

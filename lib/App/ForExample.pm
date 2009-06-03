@@ -13,9 +13,6 @@ Version 0.01
 
 =cut
 
-# TODO Better start-stop script
-# TODO Add alert e-mail to monit
-
 our $VERSION = '0.01';
 
 use App::ForExample::Catalog;
