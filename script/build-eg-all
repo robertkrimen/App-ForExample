@@ -1,6 +1,7 @@
 #!/bin/bash
 
 BUILD="./script/build-eg"
+FOR_EXAMPLE="./script/for-example"
 
 HOST_PORT_SOCKET="127.0.0.1:45450"
 
@@ -31,8 +32,11 @@ $BUILD catalyst/fastcgi --no-bundle --fastcgi-socket $HOST_PORT_SOCKET lighttpd 
 $BUILD catalyst/fastcgi --fastcgi-socket /tmp/lighttpd-eg.socket lighttpd static > t/assets/lighttpd/static
 $BUILD catalyst/fastcgi/start-stop --fastcgi-pid-file "eg-fastcgi.pid" > t/assets/fastcgi-start-stop
 $BUILD catalyst/fastcgi/start-stop --fastcgi-pid-file "eg-fastcgi-host-port.pid" --fastcgi-socket $HOST_PORT_SOCKET > t/assets/fastcgi-start-stop-host-port
-$BUILD catalyst/fastcgi/monit --fastcgi-pid-file "eg-fastcgi.pid"
-$BUILD catalyst/fastcgi/monit --fastcgi-pid-file "eg-fastcgi-host-port.pid"
+$BUILD catalyst/fastcgi/monit --fastcgi-pid-file "eg-fastcgi.pid" > t/assets/fastcgi-monit
+$BUILD catalyst/fastcgi/monit --fastcgi-pid-file "eg-fastcgi-host-port.pid" > t/assets/fastcgi-monit-host-port
+$FOR_EXAMPLE monit --home /home/rob/monit > t/assets/monit
+
+cat t/assets/fastcgi-monit*
 
 #Eg
 #|-- Changes

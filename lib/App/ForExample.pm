@@ -5,7 +5,7 @@ use strict;
 
 =head1 NAME
 
-App::ForExample - A guide through Catalyst, Apache, lighttpd, nginx, monit, ..., configuration hell
+App::ForExample - A guide through Catalyst, Apache, lighttpd, nginx, monit, ... configuration hell
 
 =head1 VERSION
 
@@ -194,9 +194,9 @@ Usage: for-example ...
 
 Where ... can be:
 
-    catalyst/fastcgi <http-daemon> <fastcgi-method>
+    catalyst/fastcgi ...
 
-        Generate a Catalyst FastCGI configuration (for the specified http-daemon and fastcgi-method)
+        Generate a Catalyst FastCGI configuration (for monit, start-stop, or the specified http daemon and fastcgi method)
 
         --package           The Catalyst package for your application (e.g. Project::Xyzzy or My::Application)
         --home              The path to your Catalyst home directory, default: . (The current directory)

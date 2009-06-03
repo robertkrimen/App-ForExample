@@ -1,4 +1,4 @@
-.PHONY: all test clean distclean dist
+.PHONY: all test clean distclean dist build-all test-all
 
 all: test
 
@@ -21,3 +21,9 @@ clean: distclean
 reset: clean
 	perl Makefile.PL
 	$(MAKE) test
+
+build-all:
+	./script/build-eg-all
+
+test-all:
+	./script/test-all
