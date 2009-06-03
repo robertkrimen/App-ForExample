@@ -4,8 +4,8 @@
     ServerName eg.localhost
     ServerAlias www.eg.localhost
 
-    CustomLog "|/usr/bin/cronolog /var/log/apache2/eg.localhost-%Y-%m.access.log -S /var/log/apache2/eg.localhost.access.log" combined
-    ErrorLog "|/usr/bin/cronolog /var/log/apache2/eg.localhost-%Y-%m.error.log -S /var/log/apache2/eg.localhost.error.log"
+    CustomLog "|/usr/bin/cronolog /home/rob/develop/App-ForExample/Eg/log/apache2-eg.localhost-%Y-%m.access.log -S /home/rob/develop/App-ForExample/Eg/log/apache2-eg.localhost.access.log" combined
+    ErrorLog "|/usr/bin/cronolog /home/rob/develop/App-ForExample/Eg/log/apache2-eg.localhost-%Y-%m.error.log -S /home/rob/develop/App-ForExample/Eg/log/apache2-eg.localhost.error.log"
 
     # TODO Need trailing slash?
     Alias / /home/rob/develop/App-ForExample/Eg/script/eg_fastcgi.pl/

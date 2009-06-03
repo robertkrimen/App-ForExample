@@ -6,7 +6,7 @@ APP_PID_FILE="/home/rob/develop/App-ForExample/Eg/eg-fastcgi-host-port.pid"
 APP_HOME="/home/rob/develop/App-ForExample/Eg"
 APP_NAME="eg"
 APP_PACKAGE="Eg"
-APP_ERROR_LOG="$APP_PID_FILE-error.log"
+APP_ERROR_LOG="/home/rob/develop/App-ForExample/Eg/log/`basename $APP_PID_FILE-error.log`"
 
 case "$1" in
     start)
@@ -31,7 +31,6 @@ case "$1" in
         echo "done"
         PID=`cat "$APP_PID_FILE"`
         echo "Started $APP_NAME ($APP_PACKAGE) (process $PID)"
-
     ;;
     stop)
         echo -n "Stopping $APP_NAME ($APP_PACKAGE)... "
@@ -60,9 +59,23 @@ case "$1" in
         sleep 2
         $0 start
     ;;
+    status|about)
+        
+        echo    "Status for $APP_NAME ($APP_PACKAGE)"
+        echo    "   home: $APP_HOME"
+        echo    "   log: $APP_ERROR_LOG"
+        echo -n "   pid: "
+        if [ -s "$APP_PID_FILE" ]; then
+            PID=`cat "$APP_PID_FILE"`
+            echo -n $PID
+        else 
+            echo -n " -"
+        fi
+        echo " ($APP_PID_FILE)"
+    ;;
     *)
-        echo "Don't understand \"$1\ ($*)"
-        echo "Usage: $0 { start | stop | restart }"
+        echo "Don't understand \"$1\" ($*)"
+        echo "Usage: $0 { start | stop | restart | status }"
         exit -1
     ;;
 esac

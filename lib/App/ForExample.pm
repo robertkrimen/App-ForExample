@@ -13,9 +13,6 @@ Version 0.01
 
 =cut
 
-# TODO t/ Testing
-# TODO Logging in nginx, lighttpd
-
 our $VERSION = '0.01';
 
 =head1 SYNOPSIS
@@ -129,7 +126,7 @@ sub package2name ($) {
     return ( $name, $name_underscore );
 }
 
-my @parse_catalyst = qw/ package=s name=s home=s base=s hostname=s fastcgi-script=s fastcgi-socket=s fastcgi-socket-path=s/;
+my @parse_catalyst = qw/ package=s name=s home=s log-home=s base=s hostname=s fastcgi-script=s fastcgi-socket=s fastcgi-socket-path=s/;
 sub parse_catalyst ($) {
     my $ctx = shift;
 
@@ -144,6 +141,9 @@ sub parse_catalyst ($) {
     # Catalyst home
     my $home = $ctx->option( 'home' ) || "./";
     $home = dir( $home )->absolute;
+
+    my $log_home = $ctx->option( 'log_home' ) || $home->subdir( 'log' );
+    $log_home = dir( $log_home )->absolute;
 
     # Catalyst application base
     my $base = $ctx->option( 'base' ) || '/';
@@ -173,6 +173,7 @@ sub parse_catalyst ($) {
         name => $name,
         name_underscore => $name_underscore,
         home => $home,
+        log_home => $log_home,
         base => $base,
         alias_base => $alias_base,
         hostname => $hostname,
@@ -200,10 +201,13 @@ Where ... can be:
 
         --package           The Catalyst package for your application (e.g. Project::Xyzzy or My::Application)
         --home              The path to your Catalyst home directory, default: . (The current directory)
+        --log-home          The directory to log into, default: <home>/log (Below the directory given by --home)
         --base              The base for your application, default: / (At the root)
-        --hostname          The hostname for your application (e.g. example.com)
+        --hostname          The hostname from which your application is served (e.g. example.com)
+
         --no-monit          Do not print out a monit configuration, if applicable
         --no-start-stop     Do not print out a start/stop script, if applicable
+        --no-bundle         Do not print out anything BUT the configuration (no monit, no start-stop)
 
         apache2 standalone  Apache2 with standalone FastCGI 
         apache2 static      Apache2 with static FastCGI

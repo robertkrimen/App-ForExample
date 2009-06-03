@@ -15,8 +15,8 @@ use warnings;
     ServerName [% hostname %]
     ServerAlias www.[% hostname %]
 
-    CustomLog "|/usr/bin/cronolog /var/log/apache2/[% hostname %]-%Y-%m.access.log -S /var/log/apache2/[% hostname %].access.log" combined
-    ErrorLog "|/usr/bin/cronolog /var/log/apache2/[% hostname %]-%Y-%m.error.log -S /var/log/apache2/[% hostname %].error.log"
+    CustomLog "|/usr/bin/cronolog [% log_home %]/apache2-[% hostname %]-%Y-%m.access.log -S [% log_home %]/apache2-[% hostname %].access.log" combined
+    ErrorLog "|/usr/bin/cronolog [% log_home %]/apache2-[% hostname %]-%Y-%m.error.log -S [% log_home %]/apache2-[% hostname %].error.log"
 _END_
 
             'catalyst/apache2/fastcgi-rewrite-rule' => <<'_END_',
@@ -112,7 +112,7 @@ APP_PID_FILE="[% fastcgi_pid_file %]"
 APP_HOME="[% home %]"
 APP_NAME="[% name %]"
 APP_PACKAGE="[% package %]"
-APP_ERROR_LOG="$APP_PID_FILE-error.log"
+APP_ERROR_LOG="[% log_home %]/`basename $APP_PID_FILE-error.log`"
 
 case "$1" in
     start)
@@ -137,7 +137,6 @@ case "$1" in
         echo "done"
         PID=`cat "$APP_PID_FILE"`
         echo "Started $APP_NAME ($APP_PACKAGE) (process $PID)"
-
     ;;
     stop)
         echo -n "Stopping $APP_NAME ($APP_PACKAGE)... "
@@ -166,9 +165,23 @@ case "$1" in
         sleep 2
         $0 start
     ;;
+    status|about)
+        
+        echo    "Status for $APP_NAME ($APP_PACKAGE)"
+        echo    "   home: $APP_HOME"
+        echo    "   log: $APP_ERROR_LOG"
+        echo -n "   pid: "
+        if [ -s "$APP_PID_FILE" ]; then
+            PID=`cat "$APP_PID_FILE"`
+            echo -n $PID
+        else 
+            echo -n " -"
+        fi
+        echo " ($APP_PID_FILE)"
+    ;;
     *)
-        echo "Don't understand \"$1\ ($*)"
-        echo "Usage: $0 { start | stop | restart }"
+        echo "Don't understand \"$1\" ($*)"
+        echo "Usage: $0 { start | stop | restart | status }"
         exit -1
     ;;
 esac
@@ -184,6 +197,10 @@ _END_
 server.modules += ( "mod_fastcgi" )
 
 $HTTP["host"] =~ "^(www.)?[% hostname %]" {
+
+    # The location for accesslog needs to be accessible/writable by the lighttpd user
+    accesslog.filename = "|/usr/bin/cronolog [% log_home %]/lighttpd-[% hostname %]-%Y-%m.access.log -S [% log_home %]/lighttpd-[% hostname %].access.log"
+
     fastcgi.server = (
         "[% base %]" => (
             "[% name %]" => (
@@ -204,6 +221,10 @@ _END_
 server.modules += ( "mod_fastcgi" )
 
 $HTTP["host"] =~ "^(www.)?[% hostname %]" {
+
+    # The location for accesslog needs to be accessible/writable by the lighttpd user
+    accesslog.filename = "|/usr/bin/cronolog [% log_home %]/lighttpd-[% hostname %]-%Y-%m.access.log -S [% log_home %]/lighttpd-[% hostname %].access.log"
+
     fastcgi.server = (
         "[% base %]" => (
             "[% name%]" => (
@@ -222,6 +243,8 @@ _END_
         'catalyst/fastcgi/nginx' => \<<'_END_',
 server {
     server_name [% hostname %];
+    access_log [% log_home %]/nginx-[% hostname %].access.log;
+    error_log [% log_home %]/nginx-[% hostname %].error.log;
     location [% alias_base %] {
         include fastcgi_params;
         [% IF fastcgi_host_port %]

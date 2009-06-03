@@ -36,6 +36,7 @@ $BUILD catalyst/fastcgi/monit --fastcgi-pid-file "eg-fastcgi.pid" > t/assets/fas
 $BUILD catalyst/fastcgi/monit --fastcgi-pid-file "eg-fastcgi-host-port.pid" > t/assets/fastcgi-monit-host-port
 $FOR_EXAMPLE monit --home /home/rob/monit > t/assets/monit
 
+cp t/assets/fastcgi-start-stop* Eg/
 cat t/assets/fastcgi-monit*
 
 #Eg

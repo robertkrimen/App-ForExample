@@ -1,4 +1,4 @@
-Eg/*.log
+Eg/log
 Eg/*.pid
 _monit
 Makefile
