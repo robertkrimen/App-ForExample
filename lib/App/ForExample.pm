@@ -15,18 +15,15 @@ Version 0.01
 
 # TODO Better start-stop script
 # TODO Add alert e-mail to monit
-# TODO Less strict getopt-chain parsing
 
 our $VERSION = '0.01';
 
-#use App::ForExample::ModuleEmbedCatalog;
 use App::ForExample::Catalog;
 
 use Template;
 use Carp;
 use Path::Class;
 
-#my $catalog = App::ForExample::ModuleEmbedCatalog->extract( __PACKAGE__ );
 my $catalog = App::ForExample::Catalog->catalog;
 my $tt = Template->new({ BLOCKS => $catalog->{common} });
 
