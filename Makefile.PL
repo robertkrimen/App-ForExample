@@ -27,9 +27,10 @@ Test::Output
 _END_
 
     map { my ($pk, $vr) = split m/\s/; requires $pk => $vr || 0 } grep { ! /^\s*#/ } split m/\n/, <<_END_;
-Template
 Carp
-Getopt::Chain
+Getopt::Chain 0.014
+Path::Class
+Template
 _END_
 }
 

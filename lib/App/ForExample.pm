@@ -93,9 +93,15 @@ You can install L<App::ForExample> by using L<CPAN>:
 
 If that doesn't work properly, you can find help at:
 
-    L<http://sial.org/howto/perl/life-with-cpan/>
-    L<http://sial.org/howto/perl/life-with-cpan/macosx/> # Help on Mac OS X
-    L<http://sial.org/howto/perl/life-with-cpan/non-root/> # Help with a non-root account
+    http://sial.org/howto/perl/life-with-cpan/
+    http://sial.org/howto/perl/life-with-cpan/macosx/ # Help on Mac OS X
+    http://sial.org/howto/perl/life-with-cpan/non-root/ # Help with a non-root account
+
+=head1 CONTRIBUTE
+
+The GitHub repository is:
+
+    http://github.com/robertkrimen/App-ForExample/tree/master
 
 =cut
 
