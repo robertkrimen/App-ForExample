@@ -87,9 +87,11 @@ INSTALL
         http://sial.org/howto/perl/life-with-cpan/non-root/ # Help with a non-root account
 
 CONTRIBUTE
-    The GitHub repository is:
+    You can contribute or fork this project via GitHub:
 
-        http://github.com/robertkrimen/App-ForExample/tree/master
+    <http://github.com/robertkrimen/App-ForExample/tree/master>
+
+        git clone git://github.com/robertkrimen/App-ForExample.git
 
 SEE ALSO
     <http://dev.catalystframework.org/wiki/deployment>

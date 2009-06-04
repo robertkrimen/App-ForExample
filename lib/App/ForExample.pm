@@ -99,9 +99,11 @@ If that doesn't work properly, you can find help at:
 
 =head1 CONTRIBUTE
 
-The GitHub repository is:
+You can contribute or fork this project via GitHub:
 
-    http://github.com/robertkrimen/App-ForExample/tree/master
+L<http://github.com/robertkrimen/App-ForExample/tree/master>
+
+    git clone git://github.com/robertkrimen/App-ForExample.git
 
 =cut
 
