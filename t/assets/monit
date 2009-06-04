@@ -1,7 +1,7 @@
 # Monit control file
 
 set daemon 120
-#set alert alice@example.com
+#set alert alice+hostname.monit@example.com
 set logfile /home/rob/monit/log
 set pidfile /home/rob/monit/pid
 set statefile /home/rob/monit/state

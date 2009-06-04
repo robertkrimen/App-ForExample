@@ -1,2 +1,8 @@
+TODO:
+    - Add --split option
+    - Document --fastcgi options
+    - Add --backup (or --no-backup) option
+    - Test -h help
+
 0.01 Wednesday June 03 17:39:34 PDT 2009: 
     - Initial release
