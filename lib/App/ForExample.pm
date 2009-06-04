@@ -328,7 +328,7 @@ start [qw/ help|h /], sub {
 rewrite qr#catalyst/(?:mod_perl[12]|modperl[12]?)# => 'catalyst/mod_perl';
 
 on 'catalyst/mod_perl *' => 
-    [ @parse_catalyst ] => sub {
+    [ qw/ output=s /, @parse_catalyst ] => sub {
     my $ctx = shift;
     
     my ($server);
@@ -449,7 +449,7 @@ on 'catalyst/fastcgi *' =>
 };
 
 on 'monit' => 
-    [qw/ home=s monit-home=s /] => sub {
+    [qw/ output=s home=s monit-home=s /] => sub {
     my $ctx = shift;
 
     my @home;
