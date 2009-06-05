@@ -5,7 +5,7 @@ use warnings;
 
 use Test::Most;
 
-plan skip_all => 'This test not designed on Win32' if $^O eq 'Win32';
+plan skip_all => 'This test not designed on Win32' if $^O =~ m/Win32$/;
 
 plan qw/no_plan/;
 
