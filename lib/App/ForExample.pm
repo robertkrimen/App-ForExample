@@ -9,15 +9,15 @@ App::ForExample - A guide through Catalyst, Apache, lighttpd, nginx, monit, ...,
 
 =head1 VERSION
 
-Version 0.021
+Version 0.022
 
 =cut
 
-our $VERSION = '0.021';
+our $VERSION = '0.022';
 
 =head1 SYNOPSIS
 
-    # To output an external server, FastCGI, Apache configuration (with monit stub and start-stop script), run:
+    # To output a FastCGI (ExternalServer)/Apache configuration (with monit stub and start-stop script), run:
     for-example catalyst/fastcgi apache2 standalone --package My::Application --hostname example.com --output my-application
 
     # The above command would have created the following:
@@ -27,17 +27,17 @@ our $VERSION = '0.021';
         my-application.monit        A monit stub used for monitoring the FastCGI process
 
     # This will generate a basic, stripped-down monit configuration (monitrc) suitable for a non-root user:
-    for-example monit --home $HOME/monit/monitrc --output $HOME/monit/monitrc
+    for-example monit --home $HOME/monit --output $HOME/monit/monitrc
 
     # A mod_perl configuration for Catalyst:
     for-example catalyst/mod_perl --package Project::Xyzzy --hostname xyzzy.com --home Project-Xyzzy
 
 =head1 DESCRIPTION
 
-App::ForExample is a command-line tool for generating sample configurations. It is NOT designed to do configuration
+App::ForExample is a command-line tool for generating sample configurations. It is not designed to do configuration
 management, but rather as a guide to get you 80% of the way there
 
-Besides the usual Apache2, lighttpd, nginx, and FastCGI configurations, App::ForExample can create a FastCGI start-stop script and a
+Besides the usual Apache, lighttpd, nginx, and FastCGI configurations, App::ForExample can create a FastCGI start-stop script and a
 monit configuration for monitoring those processes
 
 =head1 USAGE
