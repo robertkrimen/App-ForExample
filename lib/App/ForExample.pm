@@ -9,11 +9,11 @@ App::ForExample - A guide through Catalyst, Apache, lighttpd, nginx, monit, ...,
 
 =head1 VERSION
 
-Version 0.01
+Version 0.02
 
 =cut
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 =head1 SYNOPSIS
 
@@ -31,7 +31,6 @@ management, but rather as a guide to get you 80% of the way there
 Besides the usual Apache2, lighttpd, nginx, and FastCGI configurations, App::ForExample can create a FastCGI start-stop script and a
 monit configuration for monitoring those processes
 
-my @parse_catalyst = qw/ package=s name=s home=s log-home=s base=s hostname=s fastcgi-script=s fastcgi-socket=s fastcgi-socket-path=s/;
 =head1 USAGE
 
     Usage: for-example ACTION
@@ -316,7 +315,7 @@ For example:
 _END_
 }
 
-start [qw/ help|h /], sub {
+start [qw/ help|h|? /], sub {
     my $ctx = shift;
 
     if ( $ctx->option( 'help' ) || $ctx->last ) {
@@ -394,10 +393,10 @@ on 'catalyst/fastcgi *' =>
             output( $ctx, @output );
         }
         elsif ( $mode eq 'dynamic' ) {
-            output( $ctx, process 'catalyst/fastcgi/apache2/dynamic' => @data );
+            output( $ctx, 'catalyst-fastcgi-apache2' => process 'catalyst/fastcgi/apache2/dynamic' => @data );
         }
         elsif ( $mode eq 'static' ) {
-            output( $ctx, process 'catalyst/fastcgi/apache2/static' => @data );
+            output( $ctx, 'catalyst-fastcgi-apache2' => process 'catalyst/fastcgi/apache2/static' => @data );
         }
         else {
             croak "Don't understand mode \"$mode\""
@@ -415,7 +414,7 @@ on 'catalyst/fastcgi *' =>
             output( $ctx, @output );
         }
         elsif ( $mode eq 'static' ) {
-            output( $ctx, process 'catalyst/fastcgi/lighttpd/static' => @data );
+            output( $ctx, 'catalyst-fastcgi-lighttpd' => process 'catalyst/fastcgi/lighttpd/static' => @data );
         }
         else {
             croak "Don't understand mode \"$mode\""

@@ -1,0 +1,4 @@
+#!/bin/sh
+
+cd Eg
+../script/for-example $* --hostname eg.localhost --package Eg

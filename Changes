@@ -1,8 +1,10 @@
 TODO:
-    - Add --split option
-    - Document --fastcgi options
     - Add --backup (or --no-backup) option
     - Test -h help
+
+0.02 Thursday June 04 18:46:28 PDT 2009:
+    - Replaced --no-bundle, etc. with --bare and added --output
+    - Documented --fastcgi options
 
 0.01 Wednesday June 03 17:39:34 PDT 2009: 
     - Initial release

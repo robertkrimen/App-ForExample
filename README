@@ -3,7 +3,7 @@ NAME
     monit, ..., configuration hell
 
 VERSION
-    Version 0.01
+    Version 0.02
 
 SYNOPSIS
         for-example catalyst/fastcgi apache2 standalone --package My::Application --hostname example.com
@@ -14,14 +14,10 @@ SYNOPSIS
 
 DESCRIPTION
     App::ForExample is a command-line tool for generating sample
-    configurations. It is NOT designed to do configuration management, but a
-    guide to get you 80% of the way "there"
+    configurations. It is NOT designed to do configuration management, but
+    rather as a guide to get you 80% of the way there
 
-    This tool came into being because I was tired of forgetting the
-    configuration syntax for Apache2/lighttpd/Catalyst/FastCGI and having to
-    pull up a web browser to hunt and search for examples
-
-    Besides the usual Apache2, lighttpd, nginx, and FastCGI, configurations,
+    Besides the usual Apache2, lighttpd, nginx, and FastCGI configurations,
     App::ForExample can create a FastCGI start-stop script and a monit
     configuration for monitoring those processes
 
@@ -42,9 +38,15 @@ USAGE
                 --base              The base for your application, default: / (At the root)
                 --hostname          The hostname from which your application is served (e.g. example.com)
 
-                --no-monit          Do not print out a monit configuration, if applicable
-                --no-start-stop     Do not print out a start/stop script, if applicable
-                --no-bundle         Do not print out anything BUT the configuration (no monit, no start-stop)
+                --bare              Do not output anything BUT the configuration (no monit, no start-stop)
+                --output -          Print output to stdout
+                --output <path>     Write output to <path> (which can be either a directory or file)
+                                    This will split output appropiately (e.g. <file>, <file>.start-stop, <file>.monit)
+
+                --fastcgi-script                The <path> to the Catalyst fastcgi script (e.g. script/xyzzy_fastcgi.pl)
+                --fastcgi-socket <path>         Have fastcgi use <path> for the file socket
+                --fastcgi-socket <host:port>    Have fastcgi use <host:port> for the socket
+                --fastcgi-pid-file <path>       Store the pid for the process in <path>
 
                 apache2 standalone  Apache2 with standalone FastCGI (mod_fastcgi)
                 apache2 static      Apache2 with static FastCGI (mod_fastcgi)
