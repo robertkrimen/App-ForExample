@@ -17,7 +17,7 @@ Where ACTION can be
         --bare              Do not output anything BUT the configuration (no monit, no start-stop)
         --output -          Print output to stdout
         --output <path>     Write output to <path> (which can be either a directory or file)
-                            This will split output appropiately (e.g. <file>, <file>.start-stop, <file>.monit)
+                            This will split output appropiately (e.g. <file>.apache2, <file>.start-stop, <file>.monit)
 
         --fastcgi-script                The <path> to the Catalyst fastcgi script (e.g. script/xyzzy_fastcgi.pl)
         --fastcgi-socket <path>         Have fastcgi use <path> for the file socket

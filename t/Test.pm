@@ -24,7 +24,7 @@ sub run_for_example_eg (@) {
 
 sub stdout_same_as (&$;$) {
     my $run = shift;
-    my $file = file shift;
+    my $file = file( split m/\/+/, shift );
     my $explain = shift;
 
     my $content = scalar $file->slurp;

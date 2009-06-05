@@ -9,18 +9,27 @@ App::ForExample - A guide through Catalyst, Apache, lighttpd, nginx, monit, ...,
 
 =head1 VERSION
 
-Version 0.02
+Version 0.021
 
 =cut
 
-our $VERSION = '0.02';
+our $VERSION = '0.021';
 
 =head1 SYNOPSIS
 
-    for-example catalyst/fastcgi apache2 standalone --package My::Application --hostname example.com
+    # To output an external server, FastCGI, Apache configuration (with monit stub and start-stop script), run:
+    for-example catalyst/fastcgi apache2 standalone --package My::Application --hostname example.com --output my-application
 
-    for-example monit --home $HOME/my-monit
+    # The above command would have created the following:
 
+        my-application.apache2      The Apache2 virtual host configuration (hosted at (www.)example.com)
+        my-application.start-stop   The start/stop script to launch the FastCGI process
+        my-application.monit        A monit stub used for monitoring the FastCGI process
+
+    # This will generate a basic, stripped-down monit configuration (monitrc) suitable for a non-root user:
+    for-example monit --home $HOME/monit/monitrc --output $HOME/monit/monitrc
+
+    # A mod_perl configuration for Catalyst:
     for-example catalyst/mod_perl --package Project::Xyzzy --hostname xyzzy.com --home Project-Xyzzy
 
 =head1 DESCRIPTION
@@ -52,7 +61,7 @@ monit configuration for monitoring those processes
             --bare              Do not output anything BUT the configuration (no monit, no start-stop)
             --output -          Print output to stdout
             --output <path>     Write output to <path> (which can be either a directory or file)
-                                This will split output appropiately (e.g. <file>, <file>.start-stop, <file>.monit)
+                                This will split output appropiately (e.g. <file>.apache2, <file>.start-stop, <file>.monit)
 
             --fastcgi-script                The <path> to the Catalyst fastcgi script (e.g. script/xyzzy_fastcgi.pl)
             --fastcgi-socket <path>         Have fastcgi use <path> for the file socket
@@ -62,7 +71,6 @@ monit configuration for monitoring those processes
             apache2 standalone  Apache2 with standalone FastCGI (mod_fastcgi)
             apache2 static      Apache2 with static FastCGI (mod_fastcgi)
             apache2 dynamic     Apache2 with dynamic FastCGI (mod_fastcgi)
-
 
             lighttpd standalone lighttpd with dynamic FastCGI
             lighttpd static     lighttpd with static FastCGI
@@ -151,7 +159,13 @@ sub output ($@) {
     }
     else {
         my $name_hint = shift;
-        if ( -d $to ) {
+
+        if ( $name_hint =~ m/^(.*)\.(.*)$/ ) { # E.g. catalyst-fastcgi.apache or .lighttpd
+            $name_hint = $1;
+            unshift @_, $2;
+        }
+
+        if ( ! -f $to && ( $to =~ m/\/$/ || -d _ ) ) {
             $to = file( $to, $name_hint );
         }
         else {
@@ -160,9 +174,6 @@ sub output ($@) {
 
         my $parent = $to->parent;
         $parent->mkpath unless -d $parent;
-
-        $to->openw->print( shift );
-        print "Made $to\n";
 
         while ( @_ ) {
             my $name = shift;
@@ -271,7 +282,7 @@ Where ACTION can be
         --bare              Do not output anything BUT the configuration (no monit, no start-stop)
         --output -          Print output to stdout
         --output <path>     Write output to <path> (which can be either a directory or file)
-                            This will split output appropiately (e.g. <file>, <file>.start-stop, <file>.monit)
+                            This will split output appropiately (e.g. <file>.apache2, <file>.start-stop, <file>.monit)
 
         --fastcgi-script                The <path> to the Catalyst fastcgi script (e.g. script/xyzzy_fastcgi.pl)
         --fastcgi-socket <path>         Have fastcgi use <path> for the file socket
@@ -385,7 +396,7 @@ on 'catalyst/fastcgi *' =>
         if ( $mode eq 'standalone' ) {
             # TODO Error in Catalyst::Engine::FastCGI dox?
             my @output;
-            push @output, 'catalyst-fastcgi-apache2' => process 'catalyst/fastcgi/apache2/standalone' => @data;
+            push @output, 'catalyst-fastcgi.apache2' => process 'catalyst/fastcgi/apache2/standalone' => @data;
             unless ($bare) {
                 push @output, 'start-stop' => process 'catalyst/fastcgi/start-stop' => @data;
                 push @output, 'monit' => process 'catalyst/fastcgi/monit' => @data;
@@ -393,10 +404,10 @@ on 'catalyst/fastcgi *' =>
             output( $ctx, @output );
         }
         elsif ( $mode eq 'dynamic' ) {
-            output( $ctx, 'catalyst-fastcgi-apache2' => process 'catalyst/fastcgi/apache2/dynamic' => @data );
+            output( $ctx, 'catalyst-fastcgi.apache2' => process 'catalyst/fastcgi/apache2/dynamic' => @data );
         }
         elsif ( $mode eq 'static' ) {
-            output( $ctx, 'catalyst-fastcgi-apache2' => process 'catalyst/fastcgi/apache2/static' => @data );
+            output( $ctx, 'catalyst-fastcgi.apache2' => process 'catalyst/fastcgi/apache2/static' => @data );
         }
         else {
             croak "Don't understand mode \"$mode\""
@@ -406,7 +417,7 @@ on 'catalyst/fastcgi *' =>
 
         if ( $mode eq 'standalone' ) {
             my @output;
-            push @output, 'catalyst-fastcgi-lighttpd' => process 'catalyst/fastcgi/lighttpd/standalone' => @data;
+            push @output, 'catalyst-fastcgi.lighttpd' => process 'catalyst/fastcgi/lighttpd/standalone' => @data;
             unless ($bare) {
                 push @output, 'start-stop' => process 'catalyst/fastcgi/start-stop' => @data;
                 push @output, 'monit' => process 'catalyst/fastcgi/monit' => @data;
@@ -414,7 +425,7 @@ on 'catalyst/fastcgi *' =>
             output( $ctx, @output );
         }
         elsif ( $mode eq 'static' ) {
-            output( $ctx, 'catalyst-fastcgi-lighttpd' => process 'catalyst/fastcgi/lighttpd/static' => @data );
+            output( $ctx, 'catalyst-fastcgi.lighttpd' => process 'catalyst/fastcgi/lighttpd/static' => @data );
         }
         else {
             croak "Don't understand mode \"$mode\""
@@ -424,7 +435,7 @@ on 'catalyst/fastcgi *' =>
 
         if ( $mode eq 'standalone' ) {
             my @output;
-            push @output, 'catalyst-fastcgi-nginx' => process 'catalyst/fastcgi/nginx' => @data;
+            push @output, 'catalyst-fastcgi.nginx' => process 'catalyst/fastcgi/nginx' => @data;
             unless ($bare) {
                 push @output, 'start-stop' => process 'catalyst/fastcgi/start-stop' => @data;
                 push @output, 'monit' => process 'catalyst/fastcgi/monit' => @data;

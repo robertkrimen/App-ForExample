@@ -3,13 +3,22 @@ NAME
     monit, ..., configuration hell
 
 VERSION
-    Version 0.02
+    Version 0.021
 
 SYNOPSIS
-        for-example catalyst/fastcgi apache2 standalone --package My::Application --hostname example.com
+        # To output an external server, FastCGI, Apache configuration (with monit stub and start-stop script), run:
+        for-example catalyst/fastcgi apache2 standalone --package My::Application --hostname example.com --output my-application
 
-        for-example monit --home $HOME/my-monit
+        # The above command would have created the following:
 
+            my-application.apache2      The Apache2 virtual host configuration (hosted at (www.)example.com)
+            my-application.start-stop   The start/stop script to launch the FastCGI process
+            my-application.monit        A monit stub used for monitoring the FastCGI process
+
+        # This will generate a basic, stripped-down monit configuration (monitrc) suitable for a non-root user:
+        for-example monit --home $HOME/monit/monitrc --output $HOME/monit/monitrc
+
+        # A mod_perl configuration for Catalyst:
         for-example catalyst/mod_perl --package Project::Xyzzy --hostname xyzzy.com --home Project-Xyzzy
 
 DESCRIPTION
@@ -41,7 +50,7 @@ USAGE
                 --bare              Do not output anything BUT the configuration (no monit, no start-stop)
                 --output -          Print output to stdout
                 --output <path>     Write output to <path> (which can be either a directory or file)
-                                    This will split output appropiately (e.g. <file>, <file>.start-stop, <file>.monit)
+                                    This will split output appropiately (e.g. <file>.apache2, <file>.start-stop, <file>.monit)
 
                 --fastcgi-script                The <path> to the Catalyst fastcgi script (e.g. script/xyzzy_fastcgi.pl)
                 --fastcgi-socket <path>         Have fastcgi use <path> for the file socket
@@ -51,7 +60,6 @@ USAGE
                 apache2 standalone  Apache2 with standalone FastCGI (mod_fastcgi)
                 apache2 static      Apache2 with static FastCGI (mod_fastcgi)
                 apache2 dynamic     Apache2 with dynamic FastCGI (mod_fastcgi)
-
 
                 lighttpd standalone lighttpd with dynamic FastCGI
                 lighttpd static     lighttpd with static FastCGI
