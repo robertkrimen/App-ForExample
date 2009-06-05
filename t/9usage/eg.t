@@ -5,6 +5,8 @@ use warnings;
 
 use Test::Most;
 
+plan skip_all => 'This test not designed on Win32' if $^O eq 'Win32';
+
 plan qw/no_plan/;
 
 use t::Test;
