@@ -9,28 +9,28 @@ App::ForExample - A guide through Catalyst, Apache, lighttpd, nginx, monit, ...,
 
 =head1 VERSION
 
-Version 0.022
+Version 0.024
 
 =cut
 
-our $VERSION = '0.022';
+our $VERSION = '0.024';
 
 =head1 SYNOPSIS
 
     # To output a FastCGI (ExternalServer)/Apache configuration (with monit stub and start-stop script), run:
-    for-example catalyst/fastcgi apache2 standalone --package My::Application --hostname example.com --output my-application
+    for-example catalyst/fastcgi apache2 standalone --class My::App --hostname example.com --output my-app
 
     # The above command would have created the following:
 
-        my-application.apache2      The Apache2 virtual host configuration (hosted at (www.)example.com)
-        my-application.start-stop   The start/stop script to launch the FastCGI process
-        my-application.monit        A monit stub used for monitoring the FastCGI process
+        my-app.apache2      The Apache2 virtual host configuration (hosted at (www.)example.com)
+        my-app.start-stop   The start/stop script to launch the FastCGI process
+        my-app.monit        A monit stub used for monitoring the FastCGI process
 
     # This will generate a basic, stripped-down monit configuration (monitrc) suitable for a non-root user:
     for-example monit --home $HOME/monit --output $HOME/monit/monitrc
 
     # A mod_perl configuration for Catalyst:
-    for-example catalyst/mod_perl --package Project::Xyzzy --hostname xyzzy.com --home Project-Xyzzy
+    for-example catalyst/mod_perl --class Project::Xyzzy --hostname xyzzy.com --home Project-Xyzzy
 
 =head1 DESCRIPTION
 
@@ -52,7 +52,7 @@ monit configuration for monitoring those processes
 
             Generate a Catalyst FastCGI configuration (for monit, start-stop, or the specified http daemon and fastcgi method)
 
-            --package           The Catalyst package for your application (e.g. Project::Xyzzy or My::Application)
+            --class             The Catalyst class for your application (e.g. Project::Xyzzy or My::App)
             --home              The path to your Catalyst home directory, default: . (The current directory)
             --log-home          The directory to log into, default: <home>/log (Below the directory given by --home)
             --base              The base for your application, default: / (At the root)
@@ -84,7 +84,7 @@ monit configuration for monitoring those processes
 
             Generate a mod_perl2 (for Apache2) Catalyst configuration
 
-            --package           The Catalyst package for your application (e.g. Project::Xyzzy or My::Application)
+            --class             The Catalyst class for your application (e.g. Project::Xyzzy or My::App)
             --home              The path to your Catalyst home directory, default: . (The current directory)
             --log-home          The directory to log into, default: <home>/log (Below the directory given by --home)
             --base              The base for your application, default: / (At the root)
@@ -95,6 +95,48 @@ monit configuration for monitoring those processes
             Generate a basic, stripped-down monit configuration suitable for a non-root user
 
             --home              The directory designated monit home (containing the pid file, log, rc, ...)
+
+=head1 TUTORIAL
+
+=head2 Apache2 with FastCGI on Ubuntu
+
+Install apache2, mod_fastcgi, and L<FCGI>
+
+    sudo apt-get install apache2 libapache2-mod-fastcgi
+
+    cpan -i FCGI
+
+Create the Catalyst application C<My::App>
+
+    catalyst.pl My::App
+
+Use L<App::ForExample> to generate the configuration
+
+    cd My-App
+    for-example catalyst/fastcgi apache2 standalone --class My::App --hostname my-app.localhost --output my-app
+
+Make the log directory
+
+    mkdir log
+
+Install the apache2 configuration
+
+    sudo cp my-app.apache2 /etc/apache2/sites-enabled
+
+Enable the fastcgi start-stop script (with execute permissions)
+
+    chmod +x my-app.start-stop
+
+Add a C<my-app.localhost> entry to C</etc/hosts>
+
+    127.0.0.1       my-app.localhost
+    
+Start your application
+
+    ./my-app.start-stop start
+    sudo /etc/init.d/apache restart
+
+Visit your application at L<http://my-app.localhost>
 
 =head1 INSTALL
 
@@ -198,7 +240,7 @@ sub package2name ($) {
     return ( $name, $name_underscore );
 }
 
-my @parse_catalyst = qw/ package=s name=s home=s log-home=s base=s hostname=s fastcgi-script=s fastcgi-socket=s fastcgi-socket-path=s fastcgi-pid-file=s/;
+my @parse_catalyst = qw/ package|class=s name=s home=s log-home=s base=s hostname=s fastcgi-script=s fastcgi-socket=s fastcgi-socket-path=s fastcgi-pid-file=s/;
 sub parse_catalyst ($) {
     my $ctx = shift;
 
@@ -273,7 +315,7 @@ Where ACTION can be
 
         Generate a Catalyst FastCGI configuration (for monit, start-stop, or the specified http daemon and fastcgi method)
 
-        --package           The Catalyst package for your application (e.g. Project::Xyzzy or My::Application)
+        --class             The Catalyst class for your application (e.g. Project::Xyzzy or My::App)
         --home              The path to your Catalyst home directory, default: . (The current directory)
         --log-home          The directory to log into, default: <home>/log (Below the directory given by --home)
         --base              The base for your application, default: / (At the root)
@@ -305,7 +347,7 @@ Where ACTION can be
 
         Generate a mod_perl2 (for Apache2) Catalyst configuration
 
-        --package           The Catalyst package for your application (e.g. Project::Xyzzy or My::Application)
+        --class             The Catalyst class for your application (e.g. Project::Xyzzy or My::App)
         --home              The path to your Catalyst home directory, default: . (The current directory)
         --log-home          The directory to log into, default: <home>/log (Below the directory given by --home)
         --base              The base for your application, default: / (At the root)
@@ -319,9 +361,9 @@ Where ACTION can be
 
 For example:
 
-    for-example catalyst/fastcgi apache2 standalone --package My::Application --hostname example.com
+    for-example catalyst/fastcgi apache2 standalone --class My::App --hostname example.com
     for-example monit --home \$HOME/my-monit
-    for-example catalyst/mod_perl --package Project::Xyzzy --hostname xyzzy.com --home Project-Xyzzy
+    for-example catalyst/mod_perl --class Project::Xyzzy --hostname xyzzy.com --home Project-Xyzzy
 
 _END_
 }

@@ -30,6 +30,7 @@ _END_
     map { my ($pk, $vr) = split m/\s/; requires $pk => $vr || 0 } grep { ! /^\s*#/ } split m/\n/, <<_END_;
 Carp
 Getopt::Chain 0.014
+Moose 0.76
 Path::Class
 Template
 _END_
