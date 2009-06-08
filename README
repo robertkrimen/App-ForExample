@@ -3,7 +3,7 @@ NAME
     monit, ..., configuration hell
 
 VERSION
-    Version 0.023
+    Version 0.024
 
 SYNOPSIS
         # To output a FastCGI (ExternalServer)/Apache configuration (with monit stub and start-stop script), run:
@@ -87,11 +87,11 @@ USAGE
 
 TUTORIAL
   Apache2 with FastCGI on Ubuntu
-    Install apache2, mod_fastcgi, and Catalyst::Engine::FastCGI
+    Install apache2, mod_fastcgi, and FCGI
 
         sudo apt-get install apache2 libapache2-mod-fastcgi
 
-        cpan install Catalyst::Engine::FastCGI
+        cpan -i FCGI
 
     Create the Catalyst application "My::App"
 
