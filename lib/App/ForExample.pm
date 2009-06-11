@@ -100,11 +100,11 @@ monit configuration for monitoring those processes
 
 =head2 Apache2 with FastCGI on Ubuntu
 
-Install apache2, mod_fastcgi, and L<FCGI>
+Install apache2, mod_fastcgi, L<FCGI>, and L<FCGI::ProcManager>
 
     sudo apt-get install apache2 libapache2-mod-fastcgi
 
-    cpan -i FCGI
+    cpan -i FCGI FCGI::ProcManager
 
 Create the Catalyst application C<My::App>
 
@@ -160,14 +160,19 @@ L<http://github.com/robertkrimen/App-ForExample/tree/master>
 
 =cut
 
-use App::ForExample::Catalog;
 
 use Template;
 use Carp;
 use Path::Class;
 
+use App::ForExample::Catalog;
 my $catalog = App::ForExample::Catalog->catalog;
-my $tt = Template->new({ BLOCKS => $catalog->{common} });
+my $tt = Template->new({ BLOCKS => {
+    map { $_ => ${ $catalog->{$_} } } qw{
+            catalyst/apache2/name-alias-log
+            catalyst/apache2/fastcgi-rewrite-rule
+    }
+} });
 
 sub process ($@) {
     my $given = shift;

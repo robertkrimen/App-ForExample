@@ -1,0 +1,13 @@
+server {
+    server_name [% hostname %];
+    access_log [% log_home %]/nginx-[% hostname %].access.log;
+    error_log [% log_home %]/nginx-[% hostname %].error.log;
+    location [% alias_base %] {
+        include fastcgi_params;
+        [% IF fastcgi_host_port %]
+        fastcgi_pass [% fastcgi_socket %];
+        [% ELSE %]
+        fastcgi_pass unix:[% fastcgi_socket %];
+        [% END %]
+    }
+}

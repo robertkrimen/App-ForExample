@@ -16,7 +16,7 @@ inc/Module/Install/Win32.pm
 inc/Module/Install/WriteAll.pm
 lib/App/ForExample.pm
 lib/App/ForExample/Catalog.pm
-lib/App/ForExample/ModuleEmbedCatalog.pm
+lib/App/ForExample/CatalogSource.pm
 META.yml
 script/for-example
 t/00-load.t

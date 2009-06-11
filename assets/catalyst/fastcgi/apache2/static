@@ -1,0 +1,12 @@
+# vim: set filetype=apache
+<VirtualHost *:80>
+
+[% INCLUDE "catalyst/apache2/name-alias-log" -%]
+
+    FastCgiServer [% fastcgi_script %] -processes 3
+
+    Alias [% alias_base %] [% fastcgi_script %]/
+
+[% INCLUDE "catalyst/apache2/fastcgi-rewrite-rule" -%]
+
+</VirtualHost>

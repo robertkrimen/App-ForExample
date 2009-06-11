@@ -1,0 +1,21 @@
+server.modules += ( "mod_fastcgi" )
+
+$HTTP["host"] =~ "^(www.)?[% hostname %]" {
+
+    # The location for accesslog needs to be accessible/writable by the lighttpd user
+    accesslog.filename = "|/usr/bin/cronolog [% log_home %]/lighttpd-[% hostname %]-%Y-%m.access.log -S [% log_home %]/lighttpd-[% hostname %].access.log"
+
+    fastcgi.server = (
+        "[% base %]" => (
+            "[% name %]" => (
+                [% IF fastcgi_host_port %]
+                "host" => "[% fastcgi_host_port.0 %]",
+                "port" => [% fastcgi_host_port.1 %],
+                [% ELSE %]
+                "socket" => "/tmp/[% name %].socket",
+                [% END %]
+                "check-local" => "disable"
+            )
+        )
+    )
+}

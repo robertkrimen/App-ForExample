@@ -1,0 +1,4 @@
+    [%- IF base.length -%]
+    # Optionally, rewrite the path when accessed without a trailing slash
+    RewriteRule ^/[% base %]\$ [% base %]/ [R]
+    [%- END -%]

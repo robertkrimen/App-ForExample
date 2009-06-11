@@ -1,0 +1,5 @@
+    ServerName [% hostname %]
+    ServerAlias www.[% hostname %]
+
+    CustomLog "|/usr/bin/cronolog [% log_home %]/apache2-[% hostname %]-%Y-%m.access.log -S [% log_home %]/apache2-[% hostname %].access.log" combined
+    ErrorLog "|/usr/bin/cronolog [% log_home %]/apache2-[% hostname %]-%Y-%m.error.log -S [% log_home %]/apache2-[% hostname %].error.log"

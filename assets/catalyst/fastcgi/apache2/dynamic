@@ -1,0 +1,19 @@
+# vim: set filetype=apache
+<VirtualHost *:80>
+
+[% INCLUDE "catalyst/apache2/name-alias-log" -%]
+
+    # TODO Need trailing slash?
+    Alias [% alias_base %] [% fastcgi_script %]/
+
+[% INCLUDE "catalyst/apache2/fastcgi-rewrite-rule" -%]
+
+    <Directory "[% home %]/script">
+       Options +ExecCGI
+    </Directory>
+
+    <Files "[% fastcgi_script_basename %]">
+       SetHandler fastcgi-script
+    </Files>
+
+</VirtualHost>

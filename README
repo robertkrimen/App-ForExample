@@ -87,11 +87,11 @@ USAGE
 
 TUTORIAL
   Apache2 with FastCGI on Ubuntu
-    Install apache2, mod_fastcgi, and FCGI
+    Install apache2, mod_fastcgi, FCGI, and FCGI::ProcManager
 
         sudo apt-get install apache2 libapache2-mod-fastcgi
 
-        cpan -i FCGI
+        cpan -i FCGI FCGI::ProcManager
 
     Create the Catalyst application "My::App"
 

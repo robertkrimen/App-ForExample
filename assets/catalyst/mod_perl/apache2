@@ -1,0 +1,13 @@
+PerlSwitches -I[% home %]/lib
+PerlModule [% package %]
+
+<VirtualHost *:80>
+
+[% INCLUDE "catalyst/apache2/name-alias-log" -%]
+
+    <Location "[% base %]">
+        SetHandler          modperl
+        PerlResponseHandler [% package %]
+    </Location>
+
+</VirtualHost>

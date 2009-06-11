@@ -8,7 +8,7 @@ use vars qw/@ISA @EXPORT/;
 @ISA = qw/ Exporter /;
 
 use Test::Most;
-use Test::Output;
+use Test::Output qw/stdout_from/;
 
 use App::ForExample;
 use Path::Class;
@@ -28,10 +28,13 @@ sub stdout_same_as (&$;$) {
     my $explain = shift;
 
     my $content = scalar $file->slurp;
+    $explain = "$file" unless defined $explain;
 
     unlike $content, qr/\bUsage: for-example\b/ unless $file =~ m/help/;
     cmp_ok length $content, '>=', 100;
-    stdout_is { $run->() } $content, $explain;
+    my $stdout = stdout_from { $run->() };
+    eq_or_diff $stdout, $content, $explain;
+#    stdout_is { $run->() } $content, $explain;
 }
 
 my $scratch;

@@ -1,0 +1,19 @@
+# vim: set filetype=apache
+<VirtualHost *:80>
+
+[% INCLUDE "catalyst/apache2/name-alias-log" -%]
+
+    FastCgiExternalServer [% fastcgi_socket_path %] [% fastcgi_host_port ? "-host" : "-socket" %] [% fastcgi_socket %]
+
+    Alias [% alias_base %] [% fastcgi_socket_path %]/
+
+[% INCLUDE "catalyst/apache2/fastcgi-rewrite-rule" -%]
+
+     <Directory "[% home %]/root">
+         Options Indexes FollowSymLinks
+         AllowOverride All
+         Order allow,deny
+         Allow from all
+     </Directory>
+
+</VirtualHost>

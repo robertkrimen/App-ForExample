@@ -1,4 +1,4 @@
-.PHONY: all test clean distclean dist build-all test-all
+.PHONY: all test clean distclean dist build-all test-all assets
 
 FOR_EXAMPLE_EG := ./script/for-example-eg
 FOR_EXAMPLE := ./script/for-example
@@ -50,3 +50,6 @@ build-all:
 
 test-all:
 	./script/test-all
+
+assets:
+	./script/assets2source > lib/App/ForExample/CatalogSource.pm
